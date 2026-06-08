@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.env/
+.env
+
+# Data files
+data/
+
+# Test output
+.pytest_cache/
+
+# Logs
+*.log

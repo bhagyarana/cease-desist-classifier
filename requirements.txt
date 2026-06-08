@@ -1,0 +1,6 @@
+anthropic
+PyMuPDF
+langdetect
+python-dotenv
+PyYAML
+pytest

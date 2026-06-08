@@ -1,0 +1,35 @@
+classifier:
+  model: "claude-sonnet-4-20250514"
+  prompt_version: "v1.0.0"
+  confidence_threshold_uncertain: 0.75
+  confidence_threshold_edge_case: 0.60
+  max_text_chars: 50000
+  chunk_size_chars: 10000
+  chunk_overlap_chars: 500
+
+judge:
+  enabled: true
+  sample_rate: 0.10
+  always_on_uncertain: true
+  always_on_edge_cases: true
+
+datastore:
+  type: "sqlite"
+  sqlite_path: "data/cease_records.db"
+  postgres_url: null
+  retry_attempts: 3
+  retry_backoff_base_seconds: 1
+
+files:
+  audit_path: "data/audit.jsonl"
+  archive_path: "data/archive.jsonl"
+  deferred_path: "data/deferred.jsonl"
+
+escalation:
+  mode: "cli"
+  defer_retry_hours: 24
+  max_defer_retries: 3
+
+logging:
+  level: "INFO"
+  format: "json"
