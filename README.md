@@ -1,5 +1,5 @@
 # CeaseGuard — Cease & Desist Document Intelligence System
-> Capstone Project | Multi-Agent AI Orchestration | Wells Fargo Internal
+> Capstone Project | Multi-Agent AI Orchestration | Internal Project
 
 ---
 
@@ -193,4 +193,4 @@ Our use case differs: we handle **mass inbound volume** (not legal counsel revie
 
 ---
 
-*Built for Wells Fargo Capstone | Do not share code/data/artifacts to Wells Fargo network.*
+*Built for capstone project | Do not share code/data/artifacts to restricted networks.*

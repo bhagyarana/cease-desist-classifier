@@ -1,5 +1,5 @@
 # nfr.md — Non-Functional Requirements
-> Required by the Wells Fargo brief. Also needed for the "additional rationale" section.
+> Required by the project brief. Also needed for the "additional rationale" section.
 > Each NFR has a target, measurement method, and implementation approach.
 
 ---

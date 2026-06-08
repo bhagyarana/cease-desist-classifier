@@ -25,7 +25,7 @@
 ### Added
 - **File:** `README.md`
 - **What:** Full project overview, architecture diagram, tech stack, quick start
-- **Why:** Capstone project initialization. Wells Fargo brief analyzed.
+- **Why:** Capstone project initialization. Project brief analyzed.
 - **Agent Impact:** All agents — this is the source of truth for system intent
 
 ### Added
