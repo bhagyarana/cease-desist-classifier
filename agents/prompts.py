@@ -65,8 +65,16 @@ Do NOT default to high confidence because the task seems routine.
 
 If the document is not in English:
 - Still classify based on the content
-- The citation must be in the original language (do not translate)
+- Translate the citation to English before logging
 - Add to reasoning: "Document language: [detected language]"
 '''
 
+MULTILINGUAL_TRANSLATION_PROMPT_V1 = '''Translate this phrase into English. Return only the translation, with no extra commentary.
+
+Source language: {source_language}
+Phrase:
+{citation_text}
+'''
+
 ACTIVE_CLASSIFIER_PROMPT = CLASSIFIER_SYSTEM_PROMPT_V1
+ACTIVE_TRANSLATION_PROMPT = MULTILINGUAL_TRANSLATION_PROMPT_V1

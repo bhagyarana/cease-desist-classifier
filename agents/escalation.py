@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from datetime import timezone
 from pathlib import Path
 
 
@@ -37,7 +38,7 @@ class EscalationAgent:
     def _build_result(self, decision: str) -> dict:
         return {
             "decision": decision,
-            "decided_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+            "decided_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
             "operator_id": "cli-user",
         }
 
@@ -47,7 +48,7 @@ class EscalationAgent:
             "filename": ingestion_result["filename"],
             "pdf_path": ingestion_result["pdf_path"],
             "deferred_at": result["decided_at"],
-            "retry_after": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+            "retry_after": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
             "retry_count": 0,
             "max_retries": self.config.get("escalation", {}).get("max_defer_retries", 3),
             "deferred_reason": "Human elected to defer decision",

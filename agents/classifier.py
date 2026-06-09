@@ -3,7 +3,7 @@ import os
 import re
 from typing import Dict, Optional
 
-from agents.prompts import ACTIVE_CLASSIFIER_PROMPT
+from agents.prompts import ACTIVE_CLASSIFIER_PROMPT, ACTIVE_TRANSLATION_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +15,9 @@ CEASE_KEYWORDS = [
     "unsubscribe from all",
     "stop all communications",
     "stop all communication",
+    "stop sending us marketing emails",
+    "stop sending me marketing emails",
+    "stop sending marketing emails",
     "cease and desist",
     "cease all",
     "stop contacting me",
@@ -32,6 +35,27 @@ IRRELEVANT_KEYWORDS = [
     "account dispute",
     "contract",
     "legal dispute",
+]
+
+SPANISH_TRANSLATION_MAP = [
+    ("dejen de enviarnos correos de marketing", "stop sending us marketing emails"),
+    ("dejar de enviarnos correos de marketing", "stop sending us marketing emails"),
+    ("dejen de contactarnos", "stop contacting us"),
+    ("no me contacten", "do not contact me"),
+    ("no nos contacten", "do not contact us"),
+    ("factura", "invoice"),
+    ("pago", "payment"),
+    ("consulta", "inquiry"),
+    ("solicitud", "request"),
+]
+
+FRENCH_TRANSLATION_MAP = [
+    ("cessez de nous envoyer des e-mails marketing", "stop sending us marketing emails"),
+    ("ne me contactez pas", "do not contact me"),
+    ("ne nous contactez pas", "do not contact us"),
+    ("facture", "invoice"),
+    ("paiement", "payment"),
+    ("demande", "request"),
 ]
 
 
@@ -88,7 +112,7 @@ class ClassifierAgent:
         raw_output = response.get("completion", "")
         parsed = self._parse_json(raw_output)
         if parsed and self._validate_citation(parsed.get("citation", ""), text):
-            return self._apply_thresholds(parsed)
+            return self._finalize_output(self._apply_thresholds(parsed), text, language)
         return self._heuristic_classify(text, language)
 
     def _parse_json(self, raw_text: str) -> Optional[Dict[str, object]]:
@@ -140,16 +164,17 @@ class ClassifierAgent:
         }
 
     def _heuristic_classify(self, text: str, language: str) -> Dict[str, object]:
-        lower = text.lower()
+        translated_text = self._translate_text_for_language(text, language)
+        lower = translated_text.lower()
         cease_score = sum(1 for token in CEASE_KEYWORDS if token in lower)
         irrelevant_score = sum(1 for token in IRRELEVANT_KEYWORDS if token in lower)
-        citation = self._find_citation(lower, CEASE_KEYWORDS if cease_score >= irrelevant_score else IRRELEVANT_KEYWORDS, text)
-        if cease_score >= 2 and cease_score > irrelevant_score:
+        citation = self._find_citation(lower, CEASE_KEYWORDS if cease_score >= irrelevant_score else IRRELEVANT_KEYWORDS, translated_text)
+        if cease_score > 0 and cease_score >= irrelevant_score:
             confidence = 0.9
             label = "CEASE"
             reasoning = "The document contains explicit cease request language."
-        elif irrelevant_score >= 2 and irrelevant_score > cease_score:
-            confidence = 0.9
+        elif irrelevant_score > 0 and irrelevant_score > cease_score:
+            confidence = 0.85
             label = "IRRELEVANT"
             reasoning = "The document contains billing or general inquiry language unrelated to cease requests."
         elif cease_score > 0 and irrelevant_score > 0:
@@ -177,6 +202,59 @@ class ClassifierAgent:
             "model": self._model,
             "prompt_version": "v1.0.0",
         }
+
+    def _finalize_output(self, result: Dict[str, object], original_text: str, language: str) -> Dict[str, object]:
+        if language != "en":
+            result = dict(result)
+            result["citation"] = self._translate_citation_to_english(str(result.get("citation", "")), language)
+            reasoning = str(result.get("reasoning", "")).strip()
+            language_note = f" Document language: {language}."
+            if language_note.strip() not in reasoning:
+                result["reasoning"] = (reasoning + language_note).strip()
+            result["edge_case_flag"] = bool(result.get("edge_case_flag", False)) or not result.get("citation")
+        return result
+
+    def _translate_text_for_language(self, text: str, language: str) -> str:
+        if language == "es":
+            return self._apply_phrase_map(text, SPANISH_TRANSLATION_MAP)
+        if language == "fr":
+            return self._apply_phrase_map(text, FRENCH_TRANSLATION_MAP)
+        return text
+
+    def _translate_citation_to_english(self, citation: str, language: str) -> str:
+        if not citation:
+            return citation
+
+        if self._api_key and self._can_call_anthropic():
+            try:
+                return self._call_translation_model(citation, language)
+            except Exception as exc:
+                logger.warning("Translation via Anthropic failed: %s", exc)
+
+        return self._translate_text_for_language(citation, language)
+
+    def _call_translation_model(self, citation: str, language: str) -> str:
+        from anthropic import Anthropic
+
+        client = Anthropic(api_key=self._api_key)
+        prompt = ACTIVE_TRANSLATION_PROMPT.format(source_language=language, citation_text=citation[:4000])
+        response = client.completions.create(
+            model=self._model,
+            prompt=prompt,
+            max_tokens_to_sample=128,
+            temperature=0.0,
+        )
+        translated = (response.get("completion", "") or "").strip()
+        return translated or citation
+
+    def _apply_phrase_map(self, text: str, phrase_map: list[tuple[str, str]]) -> str:
+        updated = text
+        lowered = text.lower()
+        for source_phrase, translated_phrase in phrase_map:
+            if source_phrase in lowered:
+                updated = re.sub(re.escape(source_phrase), translated_phrase, updated, flags=re.IGNORECASE)
+                lowered = updated.lower()
+        return updated
 
     def _find_citation(self, lowered_text: str, keywords: list, original_text: str) -> str:
         for keyword in keywords:

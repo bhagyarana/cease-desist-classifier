@@ -1,6 +1,6 @@
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from tools.language_detect import detect_language
 from tools.pdf_reader import extract_text_from_pdf
@@ -15,7 +15,7 @@ class IngestionAgent:
     def run(self, input_data: dict) -> dict:
         pdf_path = input_data.get("pdf_path", "")
         document_id = str(uuid.uuid4())
-        start_ts = datetime.utcnow()
+        start_ts = datetime.now(timezone.utc)
         text = extract_text_from_pdf(pdf_path)
         extraction_status = self._determine_extraction_status(text)
         language = detect_language(text)
@@ -24,7 +24,7 @@ class IngestionAgent:
             "language": language,
             "filename": input_data.get("filename") or pdf_path,
         })
-        end_ts = datetime.utcnow()
+        end_ts = datetime.now(timezone.utc)
         return {
             "document_id": document_id,
             "filename": input_data.get("filename") or pdf_path,
@@ -35,8 +35,8 @@ class IngestionAgent:
             "language": language,
             "classification": classification,
             "status": "success" if extraction_status == "success" else "partial",
-            "processing_start": start_ts.isoformat() + "Z",
-            "processing_end": end_ts.isoformat() + "Z",
+            "processing_start": start_ts.isoformat().replace("+00:00", "Z"),
+            "processing_end": end_ts.isoformat().replace("+00:00", "Z"),
             "processing_time_ms": int((end_ts - start_ts).total_seconds() * 1000),
             "errors": [],
         }

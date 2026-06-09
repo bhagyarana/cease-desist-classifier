@@ -15,6 +15,22 @@ Each feature block has:
 
 ---
 
+## Implementation Status
+
+- [x] F-01 · PDF Text Extraction
+- [x] F-02 · Language Detection
+- [x] F-03 · Audit Logger
+- [x] F-04 · Classifier Agent
+- [x] F-05 · Ingestion Agent
+- [x] F-06 · Datastore Agent
+- [x] F-07 · Archive Agent
+- [x] F-08 · Human Escalation Agent
+- [x] F-09 · Main Orchestrator
+- [x] F-10 · Judge Agent
+- [x] F-11 · Multi-language Support
+
+---
+
 ## PHASE 1 — Foundation (Must work before anything else)
 
 ---

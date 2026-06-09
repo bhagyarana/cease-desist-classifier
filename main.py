@@ -3,7 +3,7 @@ import json
 import os
 import sqlite3
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
@@ -23,7 +23,7 @@ def load_config(config_path: str = "config.yaml") -> dict:
 
 
 def iso_timestamp() -> str:
-    return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def route_result(result: dict, config: dict, audit: AuditAgent) -> dict:

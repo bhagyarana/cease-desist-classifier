@@ -78,6 +78,44 @@
 
 ---
 
+## [v0.1.1] — 2026-06-10
+
+### Added
+- **File:** `docs/extra-work.md`
+- **What:** Post-MVP backlog for optional enhancements after the main functionality is complete
+- **Why:** Keep non-core improvements separated from the build order so implementation stays focused
+- **Agent Impact:** Planning reference only — no runtime impact
+
+## [v0.1.2] — 2026-06-10
+
+### Added
+- **File:** `agents/classifier.py`
+- **What:** Added multilingual heuristic support and English citation translation for non-English documents
+- **Why:** Implement the F-11 post-MVP enhancement and keep audit output usable for multilingual cases
+- **Agent Impact:** Classifier now handles basic Spanish and French phrase translation in offline mode, and uses the translation prompt when Anthropic is available
+
+### Added
+- **File:** `agents/prompts.py`
+- **What:** Exposed the multilingual translation prompt constant used by the classifier
+- **Why:** Keep prompt definitions centralized and versioned with the code that consumes them
+- **Agent Impact:** Classifier prompt flow now supports citation translation as a first-class step
+
+### Fixed
+- **File:** `agents/ingestion.py`, `main.py`, `agents/escalation.py`
+- **What:** Replaced deprecated `datetime.utcnow()` usage with timezone-aware UTC timestamps
+- **Why:** Remove Python deprecation warnings and keep timestamp formatting consistent across the pipeline
+- **Agent Impact:** Ingestion, routing, and escalation logs now emit timezone-aware UTC timestamps
+
+## [v0.1.3] — 2026-06-10
+
+### Changed
+- **File:** `docs/extra-work.md`
+- **What:** Removed completed post-MVP items and rewrote the remaining backlog as narrower, more actionable work
+- **Why:** Keep deferred work aligned with the current codebase state and easier to prioritize after MVP
+- **Agent Impact:** Planning/reference only; no runtime impact
+
+---
+
 ## [Unreleased] — Template for future entries
 
 ```

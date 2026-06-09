@@ -41,3 +41,17 @@ def test_classifier_uncertain_for_ambiguous_text():
 
     assert result["label"] == "UNCERTAIN"
     assert result["confidence"] < 0.75
+
+
+def test_classifier_translates_spanish_cease_citation():
+    config = {"classifier": {"model": "mock", "confidence_threshold_uncertain": 0.75, "confidence_threshold_edge_case": 0.60}}
+    agent = ClassifierAgent(config)
+    result = agent.run({
+        "text": "Dejen de enviarnos correos de marketing inmediatamente.",
+        "language": {"language": "es"},
+        "filename": "spanish_cease.pdf",
+    })
+
+    assert result["label"] == "CEASE"
+    assert result["confidence"] >= 0.8
+    assert "stop sending us marketing emails" in result["citation"].lower()

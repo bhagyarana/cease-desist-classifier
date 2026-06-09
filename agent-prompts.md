@@ -79,9 +79,23 @@ Do NOT default to high confidence because the task seems routine.
 
 If the document is not in English:
 - Still classify based on the content
-- The citation must be in the original language (do not translate)
+- Translate the citation to English before logging
 - Add to reasoning: "Document language: [detected language]"
 ```
+
+## CLASSIFIER_SYSTEM_PROMPT · v1.1.0
+
+**Used by:** `agents/classifier.py`  
+**Model:** `claude-sonnet-4-20250514`  
+**Changed:** 2026-06-10  
+**Why this version:** F-11 adds multilingual handling so non-English citations are translated before audit logging while classification still uses the original document content.
+
+This version keeps the v1.0.0 classifier rules and adds multilingual behavior:
+
+- Non-English documents are still classified from their content.
+- The citation is translated to English before logging when possible.
+- Offline fallback covers basic Spanish and French cease and invoice phrasing.
+- The reasoning includes a language note for traceability.
 
 ---
 
