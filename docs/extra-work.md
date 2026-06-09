@@ -4,6 +4,34 @@
 
 ---
 
+## High Impact First Roadmap
+
+These are the customer-facing improvements most likely to increase adoption, reduce manual work, and make the product feel polished.
+
+1. Batch upload with a results table.
+   - Upload multiple PDFs at once.
+   - Show per-document status, label, confidence, citation, and route.
+   - Add a clear success/failure summary at the top of the page.
+
+2. Recent audit/history pane.
+   - Show the latest processed documents inside the UI.
+   - Let users inspect the audit trail without leaving the app.
+   - Include timestamp, filename, classification, confidence, and final routing decision.
+
+3. Search and filters for past cases.
+   - Filter by date, label, confidence range, filename, and reviewer action.
+   - Make it easy to answer operational questions quickly.
+
+4. Inline review experience for UNCERTAIN cases.
+   - Keep the citation and extracted text visible beside the decision controls.
+   - Make the human choice obvious and fast.
+
+5. One-click export.
+   - Export filtered results to CSV or JSON for compliance and reporting.
+   - Preserve the audit trail format so downstream systems can ingest it easily.
+
+---
+
 ## Remaining Quality Work
 
 - Expand fixture coverage for damaged PDFs, mixed-language documents, and ambiguous opt-out language.
@@ -34,8 +62,10 @@
 
 ## Suggested Order After MVP
 
-1. PDF cleanup and fixture coverage.
-2. Human review flow improvements.
-3. Configurable thresholds and reporting.
-4. Export and packaging work.
-5. Concurrency, CI, and deployment hardening.
+1. Batch upload with results table.
+2. Recent audit/history pane.
+3. Search and filters for past cases.
+4. Export and reporting improvements.
+5. PDF cleanup and fixture coverage.
+6. Human review flow refinements.
+7. Configurable thresholds and operational hardening.

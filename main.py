@@ -26,7 +26,58 @@ def iso_timestamp() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
-def route_result(result: dict, config: dict, audit: AuditAgent) -> dict:
+def build_received_audit_entry(result: dict) -> dict:
+    return {
+        "entry_id": result["document_id"] + "-received",
+        "document_id": result["document_id"],
+        "filename": result["filename"],
+        "timestamp": iso_timestamp(),
+        "stage": "RECEIVED",
+        "classification": result["classification"]["label"],
+        "confidence": result["classification"]["confidence"],
+        "citation": result["classification"]["citation"],
+        "language": result["language"]["language"],
+        "edge_case_flag": result["classification"]["edge_case_flag"],
+        "agent_trace": ["ingestion"],
+        "human_override": None,
+        "routing_destination": None,
+        "error": None,
+        "processing_time_ms": int(result.get("processing_time_ms", 0) or 0),
+        "metadata": {"extraction_status": result["extraction_status"]},
+    }
+
+
+def build_completed_audit_entry(result: dict, route: dict) -> dict:
+    return {
+        "entry_id": result["document_id"] + "-completed",
+        "document_id": result["document_id"],
+        "filename": result["filename"],
+        "timestamp": iso_timestamp(),
+        "stage": "COMPLETED",
+        "classification": result["classification"]["label"],
+        "confidence": result["classification"]["confidence"],
+        "citation": result["classification"]["citation"],
+        "language": result["language"]["language"],
+        "edge_case_flag": result["classification"]["edge_case_flag"],
+        "agent_trace": result.get("agent_trace", ["ingestion"]),
+        "human_override": result.get("human_decision", {}).get("decision"),
+        "routing_destination": route.get("status"),
+        "error": None,
+        "processing_time_ms": int(result.get("processing_time_ms", 0) or 0),
+        "metadata": {
+            "route_result": route,
+            "human_note": result.get("human_decision", {}).get("note"),
+        },
+    }
+
+
+def route_result(
+    result: dict,
+    config: dict,
+    audit: AuditAgent,
+    human_decision: dict | None = None,
+    prompt_human: bool = True,
+) -> dict:
     label = result["classification"]["label"]
     if label == "CEASE":
         datastore = DatastoreAgent(config)
@@ -47,7 +98,11 @@ def route_result(result: dict, config: dict, audit: AuditAgent) -> dict:
             "routing_destination": "datastore",
             "error": None if route.get("status") != "error" else route.get("error"),
             "processing_time_ms": int(route.get("processing_time_ms", 0)),
-            "metadata": {"route_status": route.get("status"), "record_id": route.get("record_id")},
+            "metadata": {
+                "route_status": route.get("status"),
+                "record_id": route.get("record_id"),
+                "human_note": result.get("human_decision", {}).get("note"),
+            },
         })
         return route
     if label == "IRRELEVANT":
@@ -69,11 +124,44 @@ def route_result(result: dict, config: dict, audit: AuditAgent) -> dict:
             "routing_destination": "archive",
             "error": None if route.get("status") != "error" else route.get("error"),
             "processing_time_ms": int(route.get("processing_time_ms", 0)),
-            "metadata": {"route_status": route.get("status"), "filepath": route.get("filepath")},
+            "metadata": {
+                "route_status": route.get("status"),
+                "filepath": route.get("filepath"),
+                "human_note": result.get("human_decision", {}).get("note"),
+            },
         })
         return route
-    escalation = EscalationAgent(config)
-    human = escalation.run(result)
+    if not prompt_human and human_decision is None:
+        route = {
+            "status": "needs_review",
+            "review_state": "pending_human",
+            "processing_time_ms": 0,
+        }
+        audit.log({
+            "entry_id": result["document_id"] + "-route",
+            "document_id": result["document_id"],
+            "filename": result["filename"],
+            "timestamp": iso_timestamp(),
+            "stage": "ROUTED",
+            "classification": label,
+            "confidence": result["classification"]["confidence"],
+            "citation": result["classification"]["citation"],
+            "language": result["language"]["language"],
+            "edge_case_flag": result["classification"]["edge_case_flag"],
+            "agent_trace": ["ingestion", "classifier"],
+            "human_override": None,
+            "routing_destination": "needs_review",
+            "error": None,
+            "processing_time_ms": 0,
+            "metadata": {
+                "route_status": route["status"],
+                "review_state": route["review_state"],
+                "human_note": None,
+            },
+        })
+        return route
+
+    human = human_decision or EscalationAgent(config).run(result)
     decision = human["decision"]
     result["human_decision"] = human
     result["classification"]["human_override"] = decision
@@ -94,7 +182,7 @@ def route_result(result: dict, config: dict, audit: AuditAgent) -> dict:
             "routing_destination": "deferred",
             "error": None,
             "processing_time_ms": 0,
-            "metadata": {"deferred_at": human["decided_at"]},
+            "metadata": {"deferred_at": human["decided_at"], "human_note": human.get("note")},
         })
         return {"status": "deferred", "deferred_at": human["decided_at"]}
     if decision == "CEASE":
@@ -116,7 +204,11 @@ def route_result(result: dict, config: dict, audit: AuditAgent) -> dict:
             "routing_destination": "datastore",
             "error": None if route.get("status") != "error" else route.get("error"),
             "processing_time_ms": int(route.get("processing_time_ms", 0)),
-            "metadata": {"route_status": route.get("status"), "record_id": route.get("record_id")},
+            "metadata": {
+                "route_status": route.get("status"),
+                "record_id": route.get("record_id"),
+                "human_note": human.get("note"),
+            },
         })
         return route
     archive = ArchiveAgent(config)
@@ -137,7 +229,11 @@ def route_result(result: dict, config: dict, audit: AuditAgent) -> dict:
         "routing_destination": "archive",
         "error": None if route.get("status") != "error" else route.get("error"),
         "processing_time_ms": int(route.get("processing_time_ms", 0)),
-        "metadata": {"route_status": route.get("status"), "filepath": route.get("filepath")},
+            "metadata": {
+                "route_status": route.get("status"),
+                "filepath": route.get("filepath"),
+                "human_note": human.get("note"),
+            },
     })
     return route
 
@@ -145,43 +241,9 @@ def route_result(result: dict, config: dict, audit: AuditAgent) -> dict:
 def process_pdf(pdf_path: str, config: dict, audit: AuditAgent) -> dict:
     ingestion = IngestionAgent(config)
     result = ingestion.run({"pdf_path": pdf_path})
-    audit.log({
-        "entry_id": result["document_id"] + "-received",
-        "document_id": result["document_id"],
-        "filename": result["filename"],
-        "timestamp": iso_timestamp(),
-        "stage": "RECEIVED",
-        "classification": result["classification"]["label"],
-        "confidence": result["classification"]["confidence"],
-        "citation": result["classification"]["citation"],
-        "language": result["language"]["language"],
-        "edge_case_flag": result["classification"]["edge_case_flag"],
-        "agent_trace": ["ingestion"],
-        "human_override": None,
-        "routing_destination": None,
-        "error": None,
-        "processing_time_ms": int(result.get("processing_time_ms", 0) or 0),
-        "metadata": {"extraction_status": result["extraction_status"]},
-    })
+    audit.log(build_received_audit_entry(result))
     route = route_result(result, config, audit)
-    audit.log({
-        "entry_id": result["document_id"] + "-completed",
-        "document_id": result["document_id"],
-        "filename": result["filename"],
-        "timestamp": iso_timestamp(),
-        "stage": "COMPLETED",
-        "classification": result["classification"]["label"],
-        "confidence": result["classification"]["confidence"],
-        "citation": result["classification"]["citation"],
-        "language": result["language"]["language"],
-        "edge_case_flag": result["classification"]["edge_case_flag"],
-        "agent_trace": result.get("agent_trace", ["ingestion"]),
-        "human_override": result.get("human_decision", {}).get("decision"),
-        "routing_destination": route.get("status"),
-        "error": None,
-        "processing_time_ms": int(result.get("processing_time_ms", 0) or 0),
-        "metadata": {"route_result": route},
-    })
+    audit.log(build_completed_audit_entry(result, route))
     return result
 
 

@@ -114,6 +114,64 @@
 - **Why:** Keep deferred work aligned with the current codebase state and easier to prioritize after MVP
 - **Agent Impact:** Planning/reference only; no runtime impact
 
+## [v0.1.4] — 2026-06-10
+
+### Added
+- **File:** `app.py`
+- **What:** Added a Streamlit review console for uploading PDFs, seeing classification results, and making inline human decisions for UNCERTAIN cases
+- **Why:** Provide a more intuitive operator experience than the CLI prompt while reusing the same routing and audit pipeline
+- **Agent Impact:** Human escalation now has a browser-based path; CLI behavior remains available for automation
+
+### Changed
+- **File:** `main.py`
+- **What:** Shared audit-entry helpers were extracted and routing now accepts an optional human decision from the UI
+- **Why:** Keep CLI and UI flows aligned without duplicating routing logic
+- **Agent Impact:** Orchestration supports both CLI escalation and browser-based review
+
+### Changed
+- **File:** `README.md`, `requirements.txt`
+- **What:** Documented the browser UI startup flow and added the Streamlit dependency
+- **Why:** Make the project easier to run locally and clarify the primary user-facing entry point
+- **Agent Impact:** Setup instructions now include the browser UI
+
+## [v0.1.5] — 2026-06-10
+
+### Added
+- **File:** `app.py`
+- **What:** Added a batch upload tab with a results table, summary metrics, and non-blocking handling for UNCERTAIN documents
+- **Why:** Support the highest-impact workflow for operators who process multiple PDFs at once
+- **Agent Impact:** Streamlit now supports single-document review and batch processing in the same interface
+
+### Changed
+- **File:** `main.py`
+- **What:** Routing can now skip human escalation for batch runs and mark UNCERTAIN documents as `needs_review`
+- **Why:** Keep batch processing non-blocking while preserving the shared audit trail
+- **Agent Impact:** Orchestration now supports both interactive review and queue-style batch classification
+
+## [v0.1.6] — 2026-06-10
+
+### Added
+- **File:** `app.py`
+- **What:** Added a recent history tab that reads the append-only audit log and shows the latest entries in a structured table
+- **Why:** Give operators a quick in-app view of what the system just processed without opening raw log files
+- **Agent Impact:** Streamlit now includes a history surface alongside single review and batch review
+
+## [v0.1.7] — 2026-06-10
+
+### Added
+- **File:** `app.py`
+- **What:** Upgraded the history pane into a searchable and filterable case browser with date, confidence, route, label, stage, and language controls
+- **Why:** Make it easy to find the right case quickly and turn the audit log into an operational tool
+- **Agent Impact:** Operators can now search, filter, sort, and inspect past cases in the UI
+
+## [v0.1.8] — 2026-06-10
+
+### Added
+- **File:** `app.py`
+- **What:** Added a guided UNCERTAIN review workspace with highlighted source text, a decision panel, and optional reviewer notes
+- **Why:** Give operators the evidence, context, and action controls they need in one place for faster, higher-confidence reviews
+- **Agent Impact:** Streamlit now routes UNCERTAIN cases through a browser-native review flow instead of the CLI prompt
+
 ---
 
 ## [Unreleased] — Template for future entries

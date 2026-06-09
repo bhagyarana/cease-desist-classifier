@@ -121,21 +121,26 @@ cease-desist-agent/
 
 ---
 
-## Quick Start (After Implementation)
+## Quick Start
 
 ```bash
 # 1. Install dependencies
-pip install anthropic pymupdf langdetect python-dotenv
+pip install -r requirements.txt
 
 # 2. Set your API key
 echo "ANTHROPIC_API_KEY=your_key" > .env
 
-# 3. Process a single document
+# 3. Launch the browser UI
+streamlit run app.py
+
+# 4. Or process a single document from the CLI
 python main.py --pdf path/to/document.pdf
 
-# 4. Watch the audit log
+# 5. Watch the audit log
 tail -f data/audit.jsonl
 ```
+
+The browser UI is the easiest way to review documents: upload a PDF, see the classification summary, and make the human decision inline for UNCERTAIN cases.
 
 ---
 
@@ -149,7 +154,7 @@ tail -f data/audit.jsonl
 | Datastore | SQLite → PostgreSQL path | Simple start, scales |
 | Audit Log | JSONL flat file | Append-only, grep-able |
 | Orchestration | Python + Anthropic SDK | Direct control, no framework lock-in |
-| Human UI | CLI prompt → future web UI | MVP first |
+| Human UI | Streamlit review console + CLI fallback | Simple, user-friendly operator flow |
 
 ---
 
