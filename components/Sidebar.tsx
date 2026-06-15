@@ -67,7 +67,7 @@ export default function Sidebar() {
 
       <div style={{ 
         fontSize: '11px', 
-        fontFamily: 'Space Mono, monospace', 
+        fontFamily: 'Geist Mono, monospace', 
         color: 'var(--muted)',
         borderTop: '1px solid var(--border)',
         paddingTop: '16px'

@@ -1,4 +1,4 @@
-# data-schema.md — CeaseGuard Data Structures
+# data-schema.md: CeaseGuard Data Structures
 > All storage schemas defined here. Write code against these specs, not the other way around.
 
 ---

@@ -1,4 +1,4 @@
-# architecture.md — CeaseGuard Deep Architecture
+# architecture.md: CeaseGuard Deep Architecture
 > This file covers HOW the system works. README.md covers WHAT it does.
 
 ---
@@ -50,14 +50,14 @@ CeaseGuard has transitioned from a local command-line prototype to a production-
 
 ## Agent Contracts
 
-Every agent is a Python class with a strict interface. Agents communicate via plain Python dicts — no shared state, no global variables.
+Every agent is a Python class with a strict interface. Agents communicate via plain Python dicts - no shared state, no global variables.
 
 ### Contract Template
 ```python
 class AgentName:
     def __init__(self, config: dict): ...
     def run(self, input: dict) -> dict: ...
-    # run() NEVER raises exceptions — always returns error payloads on failure
+    # run() NEVER raises exceptions: always returns error payloads on failure
 ```
 
 ### Agent 1: Ingestion Agent

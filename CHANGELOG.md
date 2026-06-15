@@ -1,4 +1,4 @@
-# CHANGELOG.md — CeaseGuard Change History
+# CHANGELOG.md - CeaseGuard Change History
 > Every change must be documented here before merging.
 > Format: date · change type · files affected · why · agent impact
 > Agents: Read the last 5 entries before starting any session.
@@ -8,7 +8,7 @@
 ## How to Add an Entry
 
 ```markdown
-## [vX.Y.Z] — YYYY-MM-DD
+## [vX.Y.Z] - YYYY-MM-DD
 
 ### Changed | Added | Fixed | Removed
 - **File:** `path/to/file.py`
@@ -20,13 +20,13 @@
 
 ---
 
-## [v0.1.0] — 2025-06-08 (Project Kickoff)
+## [v0.1.0] - 2025-06-08 (Project Kickoff)
 
 ### Added
 - **File:** `README.md`
 - **What:** Full project overview, architecture diagram, tech stack, quick start
 - **Why:** Capstone project initialization. Project brief analyzed.
-- **Agent Impact:** All agents — this is the source of truth for system intent
+- **Agent Impact:** All agents - this is the source of truth for system intent
 
 ### Added
 - **File:** `features.md`
@@ -68,25 +68,25 @@
 - **File:** `docs/nfr.md`
 - **What:** Non-functional requirements (performance, security, reliability, scalability)
 - **Why:** Required by brief. Also needed to pass the "additional rationale" section of presentation.
-- **Agent Impact:** All agents — NFRs constrain implementation choices
+- **Agent Impact:** All agents - NFRs constrain implementation choices
 
 ### Added
 - **File:** `docs/rationale.md`
 - **What:** Why this solution over alternatives (LangChain, monolithic LLM, rules engine)
 - **Why:** Required by brief. Presentation needs this.
-- **Agent Impact:** Reference only — no code impact
+- **Agent Impact:** Reference only - no code impact
 
 ---
 
-## [v0.1.1] — 2026-06-10
+## [v0.1.1] - 2026-06-10
 
 ### Added
 - **File:** `docs/extra-work.md`
 - **What:** Post-MVP backlog for optional enhancements after the main functionality is complete
 - **Why:** Keep non-core improvements separated from the build order so implementation stays focused
-- **Agent Impact:** Planning reference only — no runtime impact
+- **Agent Impact:** Planning reference only - no runtime impact
 
-## [v0.1.2] — 2026-06-10
+## [v0.1.2] - 2026-06-10
 
 ### Added
 - **File:** `agents/classifier.py`
@@ -106,7 +106,7 @@
 - **Why:** Remove Python deprecation warnings and keep timestamp formatting consistent across the pipeline
 - **Agent Impact:** Ingestion, routing, and escalation logs now emit timezone-aware UTC timestamps
 
-## [v0.1.3] — 2026-06-10
+## [v0.1.3] - 2026-06-10
 
 ### Changed
 - **File:** `docs/extra-work.md`
@@ -114,7 +114,7 @@
 - **Why:** Keep deferred work aligned with the current codebase state and easier to prioritize after MVP
 - **Agent Impact:** Planning/reference only; no runtime impact
 
-## [v0.1.4] — 2026-06-10
+## [v0.1.4] - 2026-06-10
 
 ### Added
 - **File:** `app.py`
@@ -134,7 +134,7 @@
 - **Why:** Make the project easier to run locally and clarify the primary user-facing entry point
 - **Agent Impact:** Setup instructions now include the browser UI
 
-## [v0.1.5] — 2026-06-10
+## [v0.1.5] - 2026-06-10
 
 ### Added
 - **File:** `app.py`
@@ -148,7 +148,7 @@
 - **Why:** Keep batch processing non-blocking while preserving the shared audit trail
 - **Agent Impact:** Orchestration now supports both interactive review and queue-style batch classification
 
-## [v0.1.6] — 2026-06-10
+## [v0.1.6] - 2026-06-10
 
 ### Added
 - **File:** `app.py`
@@ -156,7 +156,7 @@
 - **Why:** Give operators a quick in-app view of what the system just processed without opening raw log files
 - **Agent Impact:** Streamlit now includes a history surface alongside single review and batch review
 
-## [v0.1.7] — 2026-06-10
+## [v0.1.7] - 2026-06-10
 
 ### Added
 - **File:** `app.py`
@@ -164,7 +164,7 @@
 - **Why:** Make it easy to find the right case quickly and turn the audit log into an operational tool
 - **Agent Impact:** Operators can now search, filter, sort, and inspect past cases in the UI
 
-## [v0.1.8] — 2026-06-10
+## [v0.1.8] - 2026-06-10
 
 ### Added
 - **File:** `app.py`
@@ -174,7 +174,7 @@
 
 ---
 
-## [v2.1.0-GEMINI] — 2026-06-15
+## [v2.1.0-GEMINI] - 2026-06-15
 
 ### Added
 - **File:** `app/layout.tsx`, `app/page.tsx`, `app/ingest/page.tsx`, `app/review/page.tsx`, `app/history/page.tsx`
@@ -186,7 +186,7 @@
 - **File:** `api/index.py`
 - **What:** Created a FastAPI backend router mapping Next.js frontend HTTP calls to python agent workflow executions.
 - **Why:** Connect Next.js React client with our Python agents securely in serverless Vercel hostings.
-- **Agent Impact:** Connects agents to browser traffic seamlessly.
+- **Agent Impact:** Connects agents to browser traffic.
 
 ### Changed
 - **File:** `agents/classifier.py`
@@ -198,7 +198,7 @@
 - **File:** `tools/db.py`, `agents/audit.py`, `agents/archive.py`, `agents/escalation.py`
 - **What:** Migrated file-based storage logs (audit.jsonl, archive.jsonl, deferred.jsonl) to relational tables. Created `DBConnectionProxy` to swap SQLite parameters (`?`) with PostgreSQL parameters (`%s`) dynamically at runtime.
 - **Why:** Enable persistent database writes in ephemeral serverless cloud platforms.
-- **Agent Impact:** All agents now support SQLite/PostgreSQL write transactions seamlessly.
+- **Agent Impact:** All agents now support SQLite/PostgreSQL write transactions.
 
 ### Added
 - **File:** `tools/rag_service.py`
@@ -214,10 +214,10 @@
 
 ---
 
-## [Unreleased] — Template for future entries
+## [Unreleased] - Template for future entries
 
 ```
-## [v2.2.0] — YYYY-MM-DD
+## [v2.2.0] - YYYY-MM-DD
 
 ### Added
 - **File:** `path/to/file.py`

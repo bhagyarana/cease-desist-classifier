@@ -1,4 +1,4 @@
-# Extra Work — Post-MVP Ideas
+# Extra Work: Post-MVP Ideas
 
 This document outlines the backlog of future operational improvements and production features for CeaseGuard, built on top of our completed Next.js + FastAPI version.
 

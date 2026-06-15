@@ -117,7 +117,7 @@ export default function HistoryPage() {
       {/* Logs Table */}
       <div className="panel" style={{ padding: 0 }}>
         {loading ? (
-          <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--muted)', fontFamily: 'Space Mono, monospace' }}>
+          <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--muted)', fontFamily: 'Geist Mono, monospace' }}>
             FETCHING SYSTEM TRANSACTION HISTORY...
           </div>
         ) : filteredLogs.length === 0 ? (
@@ -128,7 +128,7 @@ export default function HistoryPage() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
-                <tr style={{ backgroundColor: 'rgba(15, 118, 110, 0.03)', borderBottom: '1px solid var(--border)', fontFamily: 'Space Mono, monospace', fontSize: '11px', color: 'var(--muted)' }}>
+                <tr style={{ backgroundColor: 'rgba(15, 118, 110, 0.03)', borderBottom: '1px solid var(--border)', fontFamily: 'Geist Mono, monospace', fontSize: '11px', color: 'var(--muted)' }}>
                   <th style={{ padding: '16px 20px' }}>TIMESTAMP</th>
                   <th style={{ padding: '16px 20px' }}>DOCUMENT ID</th>
                   <th style={{ padding: '16px 20px' }}>FILENAME</th>

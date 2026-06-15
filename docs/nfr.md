@@ -1,4 +1,4 @@
-# nfr.md — Non-Functional Requirements
+# nfr.md: Non-Functional Requirements
 
 ---
 

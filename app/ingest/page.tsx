@@ -273,7 +273,7 @@ export default function IngestPage() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
                 <div style={{ padding: '16px', backgroundColor: 'var(--panel-strong)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: '11px', textTransform: 'uppercase', fontFamily: 'Space Mono, monospace', color: 'var(--muted)', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '11px', textTransform: 'uppercase', fontFamily: 'Geist Mono, monospace', color: 'var(--muted)', marginBottom: '4px' }}>
                     Agent Verdict
                   </div>
                   <span className={`pill ${
@@ -284,7 +284,7 @@ export default function IngestPage() {
                 </div>
 
                 <div style={{ padding: '16px', backgroundColor: 'var(--panel-strong)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: '11px', textTransform: 'uppercase', fontFamily: 'Space Mono, monospace', color: 'var(--muted)', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '11px', textTransform: 'uppercase', fontFamily: 'Geist Mono, monospace', color: 'var(--muted)', marginBottom: '4px' }}>
                     Confidence Score
                   </div>
                   <span className="mono" style={{ fontSize: '18px', fontWeight: 700 }}>
@@ -295,7 +295,7 @@ export default function IngestPage() {
 
               {result.classification.citation && (
                 <div className="panel" style={{ padding: '16px', backgroundColor: 'var(--panel-strong)', marginBottom: '24px' }}>
-                  <div style={{ fontSize: '11px', textTransform: 'uppercase', fontFamily: 'Space Mono, monospace', color: 'var(--muted)', marginBottom: '8px' }}>
+                  <div style={{ fontSize: '11px', textTransform: 'uppercase', fontFamily: 'Geist Mono, monospace', color: 'var(--muted)', marginBottom: '8px' }}>
                     Extracted Legal Citation
                   </div>
                   <p style={{ fontStyle: 'italic', margin: 0, fontSize: '13px' }}>

@@ -1,4 +1,4 @@
-# agent-prompts.md — CeaseGuard System Prompts (Versioned)
+# agent-prompts.md: CeaseGuard System Prompts (Versioned)
 > Prompts are code. Version them. Document why each instruction exists.
 
 ---

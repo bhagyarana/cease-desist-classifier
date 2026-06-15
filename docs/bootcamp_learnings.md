@@ -6,7 +6,7 @@ This document summarizes the engineering learnings and production patterns adopt
 
 ## 1. Structured Output Enforcement (Gemini SDK Integration)
 * **Problem**: Traditional prompt engineering suffers from formatting errors, hallucinations, and parsing crashes when mapping raw LLM responses to JSON.
-* **Bootcamp Lesson**: Leveraging native **Structured Outputs** via model configurations is much more robust than post-facto regex parsing.
+* **Bootcamp Lesson**: Using native **Structured Outputs** via model configurations is more reliable than post-facto regex parsing.
 * **Implementation**: We refactored `ClassifierAgent` to use the official `google-genai` SDK and defined our output contract as a Pydantic `ClassificationResult` class:
   ```python
   from pydantic import BaseModel

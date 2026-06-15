@@ -1,4 +1,4 @@
-# features.md — CeaseGuard Feature Breakdown
+# features.md: CeaseGuard Feature Breakdown
 
 ---
 
@@ -22,7 +22,7 @@
 
 ---
 
-## PHASE 1 — Foundation
+## PHASE 1: Foundation
 
 ### F-01 · PDF Text Extraction
 * **What**: Given a PDF file path, extract all readable text. Handles both text-based PDFs and scanned image PDFs (OCR fallback).
@@ -38,7 +38,7 @@
 
 ---
 
-## PHASE 2 — Core Intelligence
+## PHASE 2: Core Intelligence
 
 ### F-04 · Classifier Agent
 * **What**: Uses Google Gemini `gemini-2.5-pro` with structured outputs via Pydantic model response schemas to extract classification, confidence, citation, and edge case flags.
@@ -50,7 +50,7 @@
 
 ---
 
-## PHASE 3 — Routing Agents
+## PHASE 3: Routing Agents
 
 ### F-06 · Datastore Agent
 * **What**: Writes classified cease-and-desist metadata to database records (`cease_requests` table).
@@ -66,7 +66,7 @@
 
 ---
 
-## PHASE 4 — Orchestration & Web Features
+## PHASE 4: Orchestration & Web Features
 
 ### F-09 · Main Orchestrator
 * **What**: Orchestrates the stateful pipeline (`agents/workflow.py`) execution flow and resolves final routing stages.

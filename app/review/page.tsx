@@ -147,7 +147,7 @@ export default function ReviewPage() {
       </div>
 
       {loading ? (
-        <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--muted)', fontFamily: 'Space Mono, monospace' }}>
+        <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--muted)', fontFamily: 'Geist Mono, monospace' }}>
           INITIALIZING WORKSTATION...
         </div>
       ) : queue.length === 0 ? (
@@ -232,15 +232,15 @@ export default function ReviewPage() {
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
                     <div>
-                      <div style={{ fontSize: '10px', fontFamily: 'Space Mono, monospace', color: 'var(--muted)' }}>Classifier Verdict</div>
+                      <div style={{ fontSize: '10px', fontFamily: 'Geist Mono, monospace', color: 'var(--muted)' }}>Classifier Verdict</div>
                       <span className="mono" style={{ fontWeight: 600, color: 'var(--danger)' }}>{selectedItem.classification.label}</span>
                     </div>
                     <div>
-                      <div style={{ fontSize: '10px', fontFamily: 'Space Mono, monospace', color: 'var(--muted)' }}>Confidence Score</div>
+                      <div style={{ fontSize: '10px', fontFamily: 'Geist Mono, monospace', color: 'var(--muted)' }}>Confidence Score</div>
                       <span className="mono" style={{ fontWeight: 600 }}>{(selectedItem.classification.confidence * 100).toFixed(0)}%</span>
                     </div>
                     <div>
-                      <div style={{ fontSize: '10px', fontFamily: 'Space Mono, monospace', color: 'var(--muted)' }}>Language / Syntax</div>
+                      <div style={{ fontSize: '10px', fontFamily: 'Geist Mono, monospace', color: 'var(--muted)' }}>Language / Syntax</div>
                       <span className="mono" style={{ fontWeight: 600 }}>{selectedItem.language.language.toUpperCase()}</span>
                     </div>
                   </div>
@@ -259,7 +259,7 @@ export default function ReviewPage() {
                     border: '1px solid var(--border)', 
                     borderRadius: '8px', 
                     backgroundColor: 'var(--panel-strong)',
-                    fontFamily: 'Space Mono, monospace',
+                    fontFamily: 'Geist Mono, monospace',
                     fontSize: '11px',
                     lineHeight: '18px',
                     whiteSpace: 'pre-wrap',
@@ -280,7 +280,7 @@ export default function ReviewPage() {
                   </p>
 
                   {loadingSimilar ? (
-                    <div style={{ fontFamily: 'Space Mono, monospace', fontSize: '11px', color: 'var(--muted)', padding: '12px 0' }}>
+                    <div style={{ fontFamily: 'Geist Mono, monospace', fontSize: '11px', color: 'var(--muted)', padding: '12px 0' }}>
                       SEARCHING VECTOR ARCHIVE...
                     </div>
                   ) : similarCases.length === 0 ? (
@@ -339,7 +339,7 @@ export default function ReviewPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                       
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div style={{ fontSize: '11px', fontFamily: 'Space Mono, monospace', color: 'var(--muted)' }}>
+                        <div style={{ fontSize: '11px', fontFamily: 'Geist Mono, monospace', color: 'var(--muted)' }}>
                           Select action
                         </div>
                         

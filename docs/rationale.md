@@ -1,4 +1,4 @@
-# rationale.md — Why This Solution?
+# rationale.md: Why This Solution?
 > Required by the brief: "Why was this solution chosen over others?"
 > This document answers that question for each major design decision.
 

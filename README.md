@@ -1,4 +1,4 @@
-# CeaseGuard — Cease & Desist Document Intelligence System
+# CeaseGuard: Cease & Desist Document Intelligence System
 
 CeaseGuard is a production-grade multi-agent document intelligence platform that automates the triage, risk classification, and routing of inbound **Cease & Desist** legal customer requests. 
 

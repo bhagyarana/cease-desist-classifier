@@ -108,7 +108,7 @@ export default function DashboardPage() {
           </p>
 
           {loading ? (
-            <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--muted)', fontFamily: 'Space Mono, monospace' }}>
+            <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--muted)', fontFamily: 'Geist Mono, monospace' }}>
               LOADING ACTIVITY STREAM...
             </div>
           ) : history.length === 0 ? (

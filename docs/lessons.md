@@ -1,4 +1,4 @@
-# lessons.md — CeaseGuard: Mistakes & Learnings Log
+# lessons.md: CeaseGuard Mistakes & Learnings Log
 > This file is written AFTER things go wrong, not before.
 > Every entry here is a real mistake that cost time. Read it before starting any new feature.
 > Agents: read this file before every implementation session.
@@ -28,11 +28,11 @@
 **What went wrong:** `pdf_reader.py` returned `None` on a corrupt PDF. The classifier tried to call `.lower()` on it and crashed. The audit log never fired because the error propagated all the way up.  
 **Root cause:** F-01 spec said "return empty string" but the first implementation returned `None`.  
 **Fix applied:** Added `assert isinstance(text, str)` at the top of `classifier.py`. Made `pdf_reader.py` return `""` in all failure paths.  
-**Rule going forward:** Every tool/agent function must have a typed return — never `None` where `str` is expected. Use `Optional[str]` only if the caller handles `None` explicitly.
+**Rule going forward:** Every tool/agent function must have a typed return - never `None` where `str` is expected. Use `Optional[str]` only if the caller handles `None` explicitly.
 
 ---
 
-### L-002 · Audit log written AFTER routing — loses data on agent crash
+### L-002 · Audit log written AFTER routing - loses data on agent crash
 
 **When:** F-03 + F-09 integration  
 **What went wrong:** Initial design wrote one audit entry at the end. When the datastore agent crashed mid-write, no audit entry existed for that document. It was effectively lost.  
@@ -55,7 +55,7 @@
 
 ---
 
-### L-004 · Confidence score was always 0.95 — model was not calibrated
+### L-004 · Confidence score was always 0.95 - model was not calibrated
 
 **When:** F-04 testing on varied documents  
 **What went wrong:** The model returned 0.95 confidence on almost everything, including genuinely ambiguous documents. The 0.75 threshold for UNCERTAIN was useless because nothing went below 0.85.  
@@ -82,7 +82,7 @@
 
 **When:** F-08 implementation  
 **What went wrong:** When a human chose `[3] DEFER`, the code logged it to audit but didn't re-queue the document. It was never processed again.  
-**Root cause:** DEFER path wasn't implemented — it was a TODO that got forgotten.  
+**Root cause:** DEFER path wasn't implemented - it was a TODO that got forgotten.  
 **Fix applied:** DEFER now writes to `data/deferred.jsonl` with a `retry_after` timestamp. Added a `--process-deferred` flag to `main.py`.  
 **Rule going forward:** Every output state must have an explicit handler. "TODO" in routing code = guaranteed data loss.
 
@@ -103,7 +103,7 @@
 ### L-008 · Judge agent agreed with classifier 100% of the time (useless)
 
 **When:** F-10 implementation  
-**What went wrong:** The judge agent used the same base prompt as the classifier. Of course it agreed — it was essentially the same model being asked the same question.  
+**What went wrong:** The judge agent used the same base prompt as the classifier. Of course it agreed - it was essentially the same model being asked the same question.  
 **Root cause:** Judge was a copy-paste of classifier with "review this" prepended.  
 **Fix applied:** Judge agent now uses adversarial prompting: *"Assume the classifier is wrong. Find evidence that contradicts its classification. Only agree if you cannot find contradictory evidence."*  
 **Rule going forward:** A judge agent must be adversarially prompted. Same prompt = rubber stamp = waste of tokens.
