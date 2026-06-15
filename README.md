@@ -73,3 +73,20 @@ npm run dev
 ```
 
 Open **[http://localhost:3000](http://localhost:3000)** in your browser.
+
+---
+
+## Documentation Index
+
+Detailed architectural logs, specifications, and learnings are organized in the `docs/` folder:
+* **[lessons.md](file:///c:/GitHubProjects/cease-desist-classifier/docs/lessons.md)**: Live log of engineering errors, root causes, and fixes.
+* **[bootcamp_learnings.md](file:///c:/GitHubProjects/cease-desist-classifier/docs/bootcamp_learnings.md)**: Insights and takeaways from the AI Bootcamp cohort modules.
+* **[architecture.md](file:///c:/GitHubProjects/cease-desist-classifier/docs/architecture.md)**: Agent contracts, state machine execution stages, and edge case parameters.
+* **[data-schema.md](file:///c:/GitHubProjects/cease-desist-classifier/docs/data-schema.md)**: Database schemas (SQLite & PostgreSQL tables) and in-memory dict states.
+* **[features.md](file:///c:/GitHubProjects/cease-desist-classifier/docs/features.md)**: Complete compliance feature breakdowns and implementation status.
+* **[agent-prompts.md](file:///c:/GitHubProjects/cease-desist-classifier/docs/agent-prompts.md)**: System instruction prompts and Pydantic schemas.
+* **[nfr.md](file:///c:/GitHubProjects/cease-desist-classifier/docs/nfr.md)**: Performance benchmarks, database proxies, and compliance SQL queries.
+* **[rationale.md](file:///c:/GitHubProjects/cease-desist-classifier/docs/rationale.md)**: Justifications for Gemini API, FastAPI/Next.js stack, and Python cosine RAG.
+* **[tasklist.md](file:///c:/GitHubProjects/cease-desist-classifier/docs/tasklist.md)**: Checked roadmap development milestones.
+* **[extra-work.md](file:///c:/GitHubProjects/cease-desist-classifier/docs/extra-work.md)**: Future advanced backlog items.
+* **[vercel_deployment.md](file:///c:/GitHubProjects/cease-desist-classifier/docs/vercel_deployment.md)**: Step-by-step instructions to deploy on Vercel with PostgreSQL.
