@@ -317,6 +317,68 @@ async def ingest_document(file: UploadFile = File(...)):
                 pass
         raise HTTPException(status_code=500, detail=str(exc))
 
+@app.post("/api/ingest/sample")
+def ingest_sample_document(payload: Dict[str, str]):
+    sample_name = payload.get("sample_name")
+    if not sample_name:
+        raise HTTPException(status_code=400, detail="Missing sample_name parameter")
+        
+    samples_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "samples")
+    sample_path = os.path.join(samples_dir, sample_name)
+    
+    if not os.path.exists(sample_path):
+        raise HTTPException(status_code=404, detail=f"Sample document not found: {sample_name}")
+        
+    # Copy to temp file to simulate ingest
+    suffix = os.path.splitext(sample_name)[1]
+    # Check if /tmp exists, else let tempfile handle fallback
+    tmp_dir = "/tmp" if os.path.exists("/tmp") else None
+    fd, temp_path = tempfile.mkstemp(suffix=suffix, dir=tmp_dir)
+    os.close(fd)
+    
+    try:
+        shutil.copyfile(sample_path, temp_path)
+        
+        state = {
+            "pdf_path": temp_path,
+            "filename": sample_name,
+            "current_stage": "INGEST"
+        }
+        
+        workflow = CeaseGuardWorkflow(config)
+        res = workflow.run(state)
+        
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+                
+        if res.get("current_stage") == "COMPLETED":
+            return {
+                "status": "completed",
+                "document_id": res.get("document_id"),
+                "classification": res.get("classification"),
+                "route_result": res.get("route_result")
+            }
+        elif res.get("current_stage") == "ESCALATED":
+            return {
+                "status": "needs_review",
+                "document_id": res.get("document_id"),
+                "classification": res.get("classification"),
+                "route_result": res.get("route_result")
+            }
+        else:
+            raise HTTPException(status_code=500, detail=res.get("error", "Workflow execution failed"))
+            
+    except Exception as exc:
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+        raise HTTPException(status_code=500, detail=str(exc))
+
 @app.get("/api/history")
 def get_history():
     try:

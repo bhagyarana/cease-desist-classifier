@@ -1,6 +1,5 @@
 import './globals.css';
 import Sidebar from '@/components/Sidebar';
-import GridHelper from '@/components/GridHelper';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -21,7 +20,6 @@ export default function RootLayout({
           <main className="main-content">
             <div className="wrap">
               {children}
-              <GridHelper />
             </div>
           </main>
         </div>

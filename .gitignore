@@ -31,7 +31,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # Local Database & Dynamic Data Logs
-data/
+data/*
+!data/samples/
 db.sqlite3
 
 # OS Metadata

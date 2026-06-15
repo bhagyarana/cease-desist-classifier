@@ -61,3 +61,28 @@ This tasklist outlines the step-by-step roadmap to upgrade CeaseGuard into a pro
 - [x] **Vercel Cloud Deployment**
   - [x] Deploy a preview branch on Vercel.
   - [x] Link database environment variables (`DATABASE_URL`, `GEMINI_API_KEY`) and run live ingestion checks.
+
+---
+
+## Phase 5: Anti-AI Slop & Typography Polish
+- [x] **AI Formatting Cleanups**
+  - [x] Scan and remove em dashes (`—`) in headers and dates, replacing them with standard colons or hyphens.
+  - [x] Audit documentation logs to rewrite flowery AI marketing buzzwords to direct human engineering logs.
+- [x] **Typography Migration**
+  - [x] Transition font stacks from Inter and Space Mono to Vercel's Geist Sans and Geist Mono.
+
+---
+
+## Phase 6: Custom UI-UX Improvements
+- [x] **Sidebar Enhancements**
+  - [x] Design a custom vector SVG shield logo inside a dashboard link.
+  - [x] Implement a collapsible sidebar footer trigger button next to the active status and version indicators.
+- [x] **Ingestion Console Improvements**
+  - [x] Resolve selection panel borders, layout wrap padding, and button boundaries to prevent overflows.
+  - [x] Format file size display unit dynamically to show KB or MB (avoiding 0.00 MB for small files).
+- [x] **Review Workspace Split-pane**
+  - [x] Redesign layout into an intuitive 2-column split-pane placing Text Content and Decisional Overrides side-by-side.
+  - [x] Reposition similarities cards and trigger contexts to the bottom area to expand readability.
+- [x] **Local Sample PDFs**
+  - [x] Programmatically generate mock C&D, invoice, and notice PDFs.
+  - [x] Integrate click triggers on the Ingest screen to run the agent pipeline immediately.

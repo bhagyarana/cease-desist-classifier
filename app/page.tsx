@@ -126,7 +126,7 @@ export default function DashboardPage() {
                     justifyContent: 'space-between',
                     padding: '12px 16px', 
                     borderRadius: '8px', 
-                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                    backgroundColor: 'var(--panel-strong)',
                     border: '1px solid var(--border)',
                   }}
                 >

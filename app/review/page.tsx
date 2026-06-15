@@ -1,7 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ShieldAlert, CheckCircle, Clock, AlertTriangle, ChevronRight, FileText, Send, Sparkles } from 'lucide-react';
+import { 
+  ShieldAlert, 
+  CheckCircle, 
+  Clock, 
+  AlertTriangle, 
+  ChevronRight, 
+  FileText, 
+  Send, 
+  Sparkles 
+} from 'lucide-react';
 
 interface ReviewItem {
   entry_id: string;
@@ -181,7 +190,7 @@ export default function ReviewPage() {
                       borderRadius: '8px',
                       border: '1px solid',
                       borderColor: isSelected ? 'var(--accent)' : 'var(--border)',
-                      backgroundColor: isSelected ? 'var(--panel-strong)' : 'rgba(255, 255, 255, 0.4)',
+                      backgroundColor: isSelected ? 'var(--panel-strong)' : 'var(--item-inactive-bg)',
                       textAlign: 'left',
                       cursor: 'pointer',
                       width: '100%',
@@ -211,51 +220,53 @@ export default function ReviewPage() {
 
           {/* Column 2: Document Workspace Detail */}
           {selectedItem && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', flex: 1, minWidth: 0 }}>
               
-              {/* Workspace Left: Metadata, Citation, Extracted Text, and Similarity */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                
-                {/* File Information Header */}
-                <div className="panel" style={{ margin: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                    <div>
-                      <h2 style={{ fontSize: '18px', marginBottom: '4px' }}>{selectedItem.filename}</h2>
-                      <div className="mono" style={{ fontSize: '11px', color: 'var(--muted)' }}>
-                        DOC ID: {selectedItem.document_id}
-                      </div>
-                    </div>
-                    <span className="pill pill-uncertain">
-                      Needs Review
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
-                    <div>
-                      <div style={{ fontSize: '10px', fontFamily: 'Geist Mono, monospace', color: 'var(--muted)' }}>Classifier Verdict</div>
-                      <span className="mono" style={{ fontWeight: 600, color: 'var(--danger)' }}>{selectedItem.classification.label}</span>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '10px', fontFamily: 'Geist Mono, monospace', color: 'var(--muted)' }}>Confidence Score</div>
-                      <span className="mono" style={{ fontWeight: 600 }}>{(selectedItem.classification.confidence * 100).toFixed(0)}%</span>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '10px', fontFamily: 'Geist Mono, monospace', color: 'var(--muted)' }}>Language / Syntax</div>
-                      <span className="mono" style={{ fontWeight: 600 }}>{selectedItem.language.language.toUpperCase()}</span>
+              {/* Workspace Row 1: File Information Header */}
+              <div className="panel" style={{ margin: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                  <div style={{ overflow: 'hidden', marginRight: '16px' }}>
+                    <h2 style={{ fontSize: '18px', marginBottom: '4px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                      {selectedItem.filename}
+                    </h2>
+                    <div className="mono" style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                      DOC ID: {selectedItem.document_id}
                     </div>
                   </div>
+                  <span className="pill pill-uncertain" style={{ flexShrink: 0 }}>
+                    Needs Review
+                  </span>
                 </div>
 
-                {/* Extracted Text Viewer */}
-                <div className="panel" style={{ margin: 0, display: 'flex', flexDirection: 'column', height: '320px' }}>
-                  <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+                  <div>
+                    <div style={{ fontSize: '10px', fontFamily: 'Geist Mono, monospace', color: 'var(--muted)', marginBottom: '2px' }}>Classifier Verdict</div>
+                    <span className="mono" style={{ fontWeight: 600, color: 'var(--danger)' }}>{selectedItem.classification.label}</span>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '10px', fontFamily: 'Geist Mono, monospace', color: 'var(--muted)', marginBottom: '2px' }}>Confidence Score</div>
+                    <span className="mono" style={{ fontWeight: 600 }}>{(selectedItem.classification.confidence * 100).toFixed(0)}%</span>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '10px', fontFamily: 'Geist Mono, monospace', color: 'var(--muted)', marginBottom: '2px' }}>Language / Syntax</div>
+                    <span className="mono" style={{ fontWeight: 600 }}>{selectedItem.language.language.toUpperCase()}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Workspace Row 2: Text Evidence (Left) vs Decisional Override Form (Right) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '24px', alignItems: 'start' }}>
+                
+                {/* Left side: Extracted Text */}
+                <div className="panel" style={{ margin: 0, display: 'flex', flexDirection: 'column', height: '420px' }}>
+                  <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                     <FileText size={16} />
                     Extracted Text Content
                   </h3>
                   <div style={{ 
                     flex: 1, 
                     overflowY: 'auto', 
-                    padding: '12px', 
+                    padding: '14px', 
                     border: '1px solid var(--border)', 
                     borderRadius: '8px', 
                     backgroundColor: 'var(--panel-strong)',
@@ -269,9 +280,120 @@ export default function ReviewPage() {
                   </div>
                 </div>
 
-                {/* Similarity Side Pane (RAG recommendation) */}
+                {/* Right side: Decisional Override Action Form */}
+                <div className="panel" style={{ margin: 0, height: '420px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <h3 style={{ marginBottom: '12px', fontSize: '16px' }}>Decisional Override</h3>
+                  
+                  {successMsg ? (
+                    <div style={{
+                      padding: '24px 16px',
+                      backgroundColor: 'var(--success-bg)',
+                      border: '1px solid var(--success)',
+                      color: 'var(--success)',
+                      borderRadius: '8px',
+                      textAlign: 'center',
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                    }}>
+                      <CheckCircle size={24} style={{ display: 'block', margin: '0 auto 8px' }} />
+                      <span style={{ fontSize: '13px', fontWeight: 600 }}>{successMsg}</span>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, justifyContent: 'space-between' }}>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ fontSize: '11px', fontFamily: 'Geist Mono, monospace', color: 'var(--muted)' }}>
+                          Select action
+                        </div>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <button
+                            onClick={() => setDecision('CEASE')}
+                            className={`btn ${decision === 'CEASE' ? 'btn-danger' : 'btn-outline'}`}
+                            style={{ width: '100%', justifyContent: 'flex-start', gap: '12px', padding: '8px 12px', fontSize: '12px' }}
+                          >
+                            <span style={{ 
+                              width: '8px', 
+                              height: '8px', 
+                              borderRadius: '50%', 
+                              backgroundColor: decision === 'CEASE' ? '#ffffff' : 'var(--danger)' 
+                            }} />
+                            Approve as CEASE & DESIST
+                          </button>
+
+                          <button
+                            onClick={() => setDecision('IRRELEVANT')}
+                            className={`btn ${decision === 'IRRELEVANT' ? 'btn-primary' : 'btn-outline'}`}
+                            style={{ width: '100%', justifyContent: 'flex-start', gap: '12px', padding: '8px 12px', fontSize: '12px' }}
+                          >
+                            <span style={{ 
+                              width: '8px', 
+                              height: '8px', 
+                              borderRadius: '50%', 
+                              backgroundColor: decision === 'IRRELEVANT' ? '#ffffff' : 'var(--success)' 
+                            }} />
+                            Archive as IRRELEVANT
+                          </button>
+
+                          <button
+                            onClick={() => setDecision('DEFER')}
+                            className={`btn ${decision === 'DEFER' ? 'btn-warning' : 'btn-outline'}`}
+                            style={{ width: '100%', justifyContent: 'flex-start', gap: '12px', padding: '8px 12px', fontSize: '12px' }}
+                          >
+                            <span style={{ 
+                              width: '8px', 
+                              height: '8px', 
+                              borderRadius: '50%', 
+                              backgroundColor: decision === 'DEFER' ? '#ffffff' : 'var(--warning)' 
+                            }} />
+                            Defer for Later Review
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label className="mono" style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                          Operator justification note
+                        </label>
+                        <textarea
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                          placeholder="Provide reasoning for override..."
+                          className="text-input"
+                          style={{ height: '75px', resize: 'none', fontSize: '12px', padding: '8px 12px' }}
+                        />
+                      </div>
+
+                      <button
+                        onClick={handleSubmitReview}
+                        disabled={!decision || submitting}
+                        className="btn btn-primary"
+                        style={{ 
+                          width: '100%', 
+                          opacity: (!decision || submitting) ? 0.6 : 1, 
+                          cursor: (!decision || submitting) ? 'not-allowed' : 'pointer',
+                          gap: '8px',
+                          padding: '10px'
+                        }}
+                      >
+                        <Send size={14} />
+                        <span style={{ fontSize: '13px' }}>{submitting ? 'Submitting...' : 'Submit Override'}</span>
+                      </button>
+
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+              {/* Workspace Row 3: Similar Recommendations & Inbound Context Trigger */}
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px', alignItems: 'start' }}>
+                
+                {/* Left side: RAG Similarities (takes wide space) */}
                 <div className="panel" style={{ margin: 0 }}>
-                  <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', marginBottom: '8px' }}>
                     <Sparkles size={16} style={{ color: 'var(--accent)' }} />
                     RAG Vector Similarities
                   </h3>
@@ -288,14 +410,14 @@ export default function ReviewPage() {
                       No matching vector embeddings found in database.
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
                       {similarCases.map((caseItem, idx) => (
                         <div 
                           key={caseItem.document_id + idx}
                           style={{
                             padding: '12px',
                             borderRadius: '8px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                            backgroundColor: 'var(--panel-strong)',
                             border: '1px solid var(--border)',
                           }}
                         >
@@ -307,7 +429,7 @@ export default function ReviewPage() {
                               Similarity: {(caseItem.similarity * 100).toFixed(0)}%
                             </span>
                           </div>
-                          <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                          <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
                             {caseItem.summary}
                           </p>
                         </div>
@@ -316,127 +438,27 @@ export default function ReviewPage() {
                   )}
                 </div>
 
-              </div>
-
-              {/* Workspace Right: Decisional Override Form */}
-              <div style={{ position: 'sticky', top: '24px' }}>
-                <div className="panel" style={{ margin: 0 }}>
-                  <h3 style={{ marginBottom: '16px' }}>Decisional Override</h3>
-                  
-                  {successMsg ? (
+                {/* Right side: Escalation Trigger Context */}
+                {selectedItem.classification.citation && (
+                  <div className="panel" style={{ margin: 0, minHeight: '135px' }}>
+                    <div className="mono" style={{ fontSize: '10px', color: 'var(--muted)', marginBottom: '8px' }}>
+                      Escalation Trigger Context
+                    </div>
                     <div style={{
-                      padding: '24px 16px',
-                      backgroundColor: 'var(--success-bg)',
-                      border: '1px solid var(--success)',
-                      color: 'var(--success)',
-                      borderRadius: '8px',
-                      textAlign: 'center',
+                      padding: '12px',
+                      backgroundColor: 'var(--accent-light)',
+                      borderLeft: '3px solid var(--accent)',
+                      fontSize: '12px',
+                      lineHeight: '18px',
+                      color: 'var(--text)',
+                      borderRadius: '4px',
+                      fontStyle: 'italic'
                     }}>
-                      <CheckCircle size={24} style={{ display: 'block', margin: '0 auto 8px' }} />
-                      <span style={{ fontSize: '13px', fontWeight: 600 }}>{successMsg}</span>
+                      "{selectedItem.classification.citation}"
                     </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                      
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div style={{ fontSize: '11px', fontFamily: 'Geist Mono, monospace', color: 'var(--muted)' }}>
-                          Select action
-                        </div>
-                        
-                        <button
-                          onClick={() => setDecision('CEASE')}
-                          className={`btn ${decision === 'CEASE' ? 'btn-danger' : 'btn-outline'}`}
-                          style={{ width: '100%', justifyContent: 'flex-start', gap: '12px' }}
-                        >
-                          <span style={{ 
-                            width: '8px', 
-                            height: '8px', 
-                            borderRadius: '50%', 
-                            backgroundColor: decision === 'CEASE' ? '#ffffff' : 'var(--danger)' 
-                          }} />
-                          Approve as CEASE & DESIST
-                        </button>
+                  </div>
+                )}
 
-                        <button
-                          onClick={() => setDecision('IRRELEVANT')}
-                          className={`btn ${decision === 'IRRELEVANT' ? 'btn-primary' : 'btn-outline'}`}
-                          style={{ width: '100%', justifyContent: 'flex-start', gap: '12px' }}
-                        >
-                          <span style={{ 
-                            width: '8px', 
-                            height: '8px', 
-                            borderRadius: '50%', 
-                            backgroundColor: decision === 'IRRELEVANT' ? '#ffffff' : 'var(--success)' 
-                          }} />
-                          Archive as IRRELEVANT
-                        </button>
-
-                        <button
-                          onClick={() => setDecision('DEFER')}
-                          className={`btn ${decision === 'DEFER' ? 'btn-warning' : 'btn-outline'}`}
-                          style={{ width: '100%', justifyContent: 'flex-start', gap: '12px' }}
-                        >
-                          <span style={{ 
-                            width: '8px', 
-                            height: '8px', 
-                            borderRadius: '50%', 
-                            backgroundColor: decision === 'DEFER' ? '#ffffff' : 'var(--warning)' 
-                          }} />
-                          Defer for Later Review
-                        </button>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label className="mono" style={{ fontSize: '11px', color: 'var(--muted)' }}>
-                          Operator justification note
-                        </label>
-                        <textarea
-                          value={notes}
-                          onChange={(e) => setNotes(e.target.value)}
-                          placeholder="Provide reasoning for override..."
-                          className="text-input"
-                          style={{ height: '100px', resize: 'none' }}
-                        />
-                      </div>
-
-                      <button
-                        onClick={handleSubmitReview}
-                        disabled={!decision || submitting}
-                        className="btn btn-primary"
-                        style={{ 
-                          width: '100%', 
-                          opacity: (!decision || submitting) ? 0.6 : 1, 
-                          cursor: (!decision || submitting) ? 'not-allowed' : 'pointer',
-                          gap: '8px'
-                        }}
-                      >
-                        <Send size={16} />
-                        {submitting ? 'Submitting Override...' : 'Submit Verdict Override'}
-                      </button>
-
-                    </div>
-                  )}
-
-                  {selectedItem.classification.citation && (
-                    <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
-                      <div className="mono" style={{ fontSize: '10px', color: 'var(--muted)', marginBottom: '8px' }}>
-                        Escalation Trigger Context
-                      </div>
-                      <div style={{
-                        padding: '12px',
-                        backgroundColor: 'var(--accent-light)',
-                        borderLeft: '3px solid var(--accent)',
-                        fontSize: '12px',
-                        lineHeight: '18px',
-                        color: 'var(--text)',
-                        borderRadius: '4px'
-                      }}>
-                        "{selectedItem.classification.citation}"
-                      </div>
-                    </div>
-                  )}
-
-                </div>
               </div>
 
             </div>

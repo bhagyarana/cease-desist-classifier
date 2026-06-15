@@ -2,7 +2,15 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { UploadCloud, ShieldAlert, CheckCircle, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
+import { 
+  UploadCloud, 
+  ShieldAlert, 
+  CheckCircle, 
+  Clock, 
+  AlertTriangle, 
+  RefreshCw, 
+  FileText 
+} from 'lucide-react';
 
 interface IngestStep {
   id: string;
@@ -26,6 +34,24 @@ export default function IngestPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  const sampleDocs = [
+    {
+      filename: 'Starbucks_Cease_And_Desist.pdf',
+      label: 'Starbucks Trademark C&D',
+      desc: 'Infringing cups notice (Should classify as CEASE with high confidence)'
+    },
+    {
+      filename: 'Acme_Invoice_Irrelevant.pdf',
+      label: 'Acme Coffee Machine Invoice',
+      desc: 'Quarterly maintenance bill (Should classify as IRRELEVANT)'
+    },
+    {
+      filename: 'SynergySphere_Ambiguous_Notice.pdf',
+      label: 'SynergySphere Excavation Notice',
+      desc: 'Property boundary structural notice (Should classify as UNCERTAIN / Needs Review)'
+    }
+  ];
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
   };
@@ -48,6 +74,12 @@ export default function IngestPage() {
       setFile(e.target.files[0]);
       setError(null);
     }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes <= 0) return 'Size unknown';
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 
   const startPipeline = async () => {
@@ -80,22 +112,22 @@ export default function IngestPage() {
     };
 
     try {
-      // Step 1: Ingesting text
+      // Step 1: Text extraction simulation
       await new Promise((r) => setTimeout(r, 600));
       updateStep('1', 'done');
       updateStep('2', 'running');
 
-      // Step 2: Language analysis
+      // Step 2: Language analysis simulation
       await new Promise((r) => setTimeout(r, 500));
       updateStep('2', 'done');
       updateStep('3', 'running');
 
-      // Step 3: Classifier execution
+      // Step 3: Classifier execution simulation
       await new Promise((r) => setTimeout(r, 900));
       updateStep('3', 'done');
       updateStep('4', 'running');
 
-      // Step 4: RAG search
+      // Step 4: RAG search simulation
       await new Promise((r) => setTimeout(r, 600));
       updateStep('4', 'done');
       updateStep('5', 'running');
@@ -115,6 +147,73 @@ export default function IngestPage() {
         prev.map((step) => (step.status === 'running' ? { ...step, status: 'failed' } : step))
       );
       setError(err.message || 'Failed to ingest document.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSampleIngest = async (filename: string) => {
+    setUploading(true);
+    setResult(null);
+    setError(null);
+    
+    setSteps([
+      { id: '1', label: 'Extracting PDF layout and textual content', status: 'running' },
+      { id: '2', label: 'Analyzing document language and syntax patterns', status: 'idle' },
+      { id: '3', label: 'Running Gemini classification & structured output extraction', status: 'idle' },
+      { id: '4', label: 'Performing Cosine similarity vector search & RAG audit', status: 'idle' },
+      { id: '5', label: 'Determining optimal routing (Archive / Datastore / Escalation)', status: 'idle' },
+    ]);
+
+    const updateStep = (id: string, newStatus: 'running' | 'done' | 'failed') => {
+      setSteps((prev) =>
+        prev.map((step) => (step.id === id ? { ...step, status: newStatus } : step))
+      );
+    };
+
+    try {
+      // Step 1: Text extraction simulation
+      await new Promise((r) => setTimeout(r, 600));
+      updateStep('1', 'done');
+      updateStep('2', 'running');
+
+      // Step 2: Language analysis simulation
+      await new Promise((r) => setTimeout(r, 500));
+      updateStep('2', 'done');
+      updateStep('3', 'running');
+
+      // Step 3: Classifier execution simulation
+      await new Promise((r) => setTimeout(r, 900));
+      updateStep('3', 'done');
+      updateStep('4', 'running');
+
+      // Step 4: RAG search simulation
+      await new Promise((r) => setTimeout(r, 600));
+      updateStep('4', 'done');
+      updateStep('5', 'running');
+
+      const response = await fetch('/api/ingest/sample', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sample_name: filename }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail || 'Internal server error');
+      }
+      const data = await response.json();
+      
+      updateStep('5', 'done');
+      await new Promise((r) => setTimeout(r, 300));
+      setResult(data);
+    } catch (err: any) {
+      setSteps((prev) =>
+        prev.map((step) => (step.status === 'running' ? { ...step, status: 'failed' } : step))
+      );
+      setError(err.message || 'Failed to ingest sample document.');
     } finally {
       setUploading(false);
     }
@@ -161,40 +260,81 @@ export default function IngestPage() {
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'space-between',
+                  gap: '16px',
                   padding: '16px', 
-                  backgroundColor: 'rgba(15, 118, 110, 0.04)', 
+                  backgroundColor: 'var(--accent-light)', 
                   border: '1px solid var(--accent)', 
                   borderRadius: '8px',
                   marginBottom: '24px'
                 }}>
-                  <div>
-                    <span style={{ fontWeight: 600 }}>Selected: </span>
-                    <span className="mono" style={{ fontSize: '13px' }}>{file.name}</span>
-                    <span style={{ fontSize: '12px', color: 'var(--muted)', marginLeft: '8px' }}>
-                      ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                    </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden', flex: 1 }}>
+                    <FileText size={20} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                      <span className="mono" style={{ 
+                        fontSize: '13px', 
+                        fontWeight: 600, 
+                        color: 'var(--text)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}>
+                        {file.name}
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                        {formatFileSize(file.size)}
+                      </span>
+                    </div>
                   </div>
-                  <button className="btn btn-primary" onClick={startPipeline}>
+                  <button className="btn btn-primary" onClick={startPipeline} style={{ flexShrink: 0 }}>
                     Process Document
                   </button>
                 </div>
               )}
               
-              {error && (
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '12px',
-                  padding: '16px', 
-                  backgroundColor: 'var(--danger-bg)', 
-                  border: '1px solid var(--danger)', 
-                  color: 'var(--danger)',
-                  borderRadius: '8px'
-                }}>
-                  <AlertTriangle size={18} />
-                  <span>{error}</span>
+              {/* Quick Try Samples Section */}
+              <div style={{ marginTop: '32px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
+                <h3 style={{ fontSize: '15px', marginBottom: '10px' }}>Quick Try: Sample Documents</h3>
+                <p style={{ color: 'var(--muted)', fontSize: '13px', marginBottom: '16px' }}>
+                  Click one of the pre-loaded C&D scenario files to run the agent classification pipeline instantly.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {sampleDocs.map((doc) => (
+                    <button
+                      key={doc.filename}
+                      onClick={() => handleSampleIngest(doc.filename)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '14px 18px',
+                        backgroundColor: 'var(--panel-strong)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.2s ease',
+                        width: '100%',
+                      }}
+                      className="btn-outline"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <FileText size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '2px' }}>
+                            {doc.label}
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                            {doc.desc}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="mono" style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--accent)', fontWeight: 'bold', flexShrink: 0 }}>
+                        Run →
+                      </span>
+                    </button>
+                  ))}
                 </div>
-              )}
+              </div>
             </div>
           )}
 
@@ -230,9 +370,9 @@ export default function IngestPage() {
                       )}
                     </div>
                     <span style={{ 
-                      fontSize: '13px', 
-                      fontWeight: step.status === 'running' ? 600 : 400,
-                      color: step.status === 'failed' ? 'var(--danger)' : 'var(--text)'
+                       fontSize: '13px', 
+                       fontWeight: step.status === 'running' ? 600 : 400,
+                       color: step.status === 'failed' ? 'var(--danger)' : 'var(--text)'
                     }}>
                       {step.label}
                     </span>
