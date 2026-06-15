@@ -1,264 +1,172 @@
 # data-schema.md — CeaseGuard Data Structures
 > All storage schemas defined here. Write code against these specs, not the other way around.
-> If you need to change a schema, update this file first, then update the code.
 
 ---
 
-## 1. Database: `cease_records` (SQLite → PostgreSQL)
+## 1. Relational Database Tables (SQLite & PostgreSQL)
 
-**File:** `data/cease_records.db`  
-**Created by:** `tools/db.py` on first run  
-**Written by:** `agents/datastore.py`  
-**Read by:** Future reporting/dashboard
+CeaseGuard maintains identical relational tables in SQLite (local development) and PostgreSQL (production). Table creation statements are managed dynamically in `tools/db.py`.
 
+### Table 1: `cease_requests`
+Stores successfully classified and human-approved Cease & Desist orders.
 ```sql
-CREATE TABLE IF NOT EXISTS cease_requests (
-  -- Identity
-  id                  TEXT PRIMARY KEY,      -- UUID v4, from document_id
+CREATE TABLE cease_requests (
+  id                  TEXT PRIMARY KEY,      -- UUID v4 (from document_id)
   filename            TEXT NOT NULL,          -- Original PDF filename
-  
-  -- Timing
   date_received       TEXT NOT NULL,          -- ISO 8601, when PDF was ingested
   processed_at        TEXT NOT NULL,          -- ISO 8601, when classification completed
-  created_at          TEXT DEFAULT (datetime('now')),
-  
-  -- Classification
-  classification_label TEXT NOT NULL          -- "CEASE" (always CEASE in this table)
-                       CHECK(classification_label = 'CEASE'),
-  confidence           REAL NOT NULL          -- 0.0 to 1.0
-                       CHECK(confidence BETWEEN 0 AND 1),
-  citation             TEXT,                  -- Verbatim excerpt from document
-  reasoning            TEXT,                  -- One-line LLM reasoning
+  created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  classification_label TEXT NOT NULL CHECK(classification_label = 'CEASE'),
+  confidence           REAL NOT NULL CHECK(confidence BETWEEN 0 AND 1),
+  citation             TEXT,                  -- Verbatim citation excerpt
+  reasoning            TEXT,                  -- Classification reasoning summary
   language             TEXT DEFAULT 'en',     -- ISO 639-1 code
-  edge_case_flag       INTEGER DEFAULT 0,     -- 0 or 1
-  
-  -- Customer info (extracted if available)
+  edge_case_flag       INTEGER DEFAULT 0,     -- 0 = normal, 1 = flagged
   customer_name        TEXT,
   customer_address     TEXT,
-  customer_contact     TEXT,                  -- Phone/email if present in doc
-  
-  -- Processing metadata
-  agent_trace          TEXT,                  -- JSON array: ["ingestion", "classifier", "datastore"]
+  customer_contact     TEXT,
+  agent_trace          TEXT,                  -- JSON stringified array of stage trace
   processing_time_ms   INTEGER,
-  
-  -- Human review
-  human_reviewed       INTEGER DEFAULT 0,     -- 0 = not reviewed, 1 = reviewed
-  human_override       TEXT,                  -- "CEASE" | "IRRELEVANT" | null
-  human_reviewed_by    TEXT,                  -- Agent/user ID
-  human_reviewed_at    TEXT,                  -- ISO 8601
-  
-  -- Judge agent
+  human_reviewed       INTEGER DEFAULT 0,     -- 0 = false, 1 = true
+  human_override       TEXT,                  -- "CEASE" | "IRRELEVANT"
+  human_reviewed_by    TEXT,                  -- Operator user ID
+  human_reviewed_at    TEXT,                  -- ISO timestamp
   judge_reviewed       INTEGER DEFAULT 0,
-  judge_agrees         INTEGER,               -- 0 or 1
-  judge_correction     TEXT                   -- JSON if correction was made
+  judge_agrees         INTEGER,
+  judge_correction     TEXT                   -- Correction notes if judge disagreed
 );
+```
 
--- Indexes for common queries
-CREATE INDEX IF NOT EXISTS idx_date_received ON cease_requests(date_received);
-CREATE INDEX IF NOT EXISTS idx_language ON cease_requests(language);
-CREATE INDEX IF NOT EXISTS idx_confidence ON cease_requests(confidence);
-CREATE INDEX IF NOT EXISTS idx_human_reviewed ON cease_requests(human_reviewed);
+### Table 2: `audit_logs`
+Immutable compliance transaction logs capturing stages (`RECEIVED`, `ROUTED`, `COMPLETED`, `FAILED`).
+```sql
+CREATE TABLE audit_logs (
+  id                  SERIAL PRIMARY KEY,    -- Auto-increment key (INTEGER in SQLite)
+  entry_id            TEXT NOT NULL,         -- Unique log transaction ID
+  document_id         TEXT NOT NULL,         -- Associated PDF document UUID
+  filename            TEXT NOT NULL,         -- PDF filename
+  timestamp           TEXT NOT NULL,         -- Log creation timestamp
+  stage               TEXT NOT NULL,         -- INGEST / CLASSIFY / JUDGE / ROUTED / COMPLETED / FAILED
+  classification      TEXT,                  -- CEASE / IRRELEVANT / UNCERTAIN
+  confidence          REAL,
+  citation            TEXT,
+  language            TEXT,
+  edge_case_flag      INTEGER DEFAULT 0,
+  agent_trace         TEXT,                  -- Stringified JSON array of stage trace
+  human_override      TEXT,                  -- Override label if human review was executed
+  routing_destination TEXT,                  -- datastore / archive / needs_review / deferred
+  error               TEXT,                  -- Error detail message if stage failed
+  processing_time_ms  INTEGER,
+  metadata            TEXT,                  -- Stringified JSON (contains raw text and pdf_path for needs_review)
+  created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Table 3: `archive_logs`
+Index of archived, non-compliance related documents.
+```sql
+CREATE TABLE archive_logs (
+  document_id         TEXT PRIMARY KEY,
+  filename            TEXT NOT NULL,
+  date_received       TEXT NOT NULL,
+  classification      TEXT DEFAULT 'IRRELEVANT',
+  confidence          REAL,
+  citation            TEXT,
+  archived_at         TEXT NOT NULL
+);
+```
+
+### Table 4: `deferred_requests`
+List of review items deferred by operators for subsequent processing.
+```sql
+CREATE TABLE deferred_requests (
+  document_id         TEXT PRIMARY KEY,
+  filename            TEXT NOT NULL,
+  deferred_at         TEXT NOT NULL,
+  operator_id         TEXT,
+  note                TEXT,
+  retries_count       INTEGER DEFAULT 0,
+  status              TEXT DEFAULT 'deferred'
+);
+```
+
+### Table 5: `document_embeddings`
+Stores embedded document vectors to power context search recommendations.
+```sql
+CREATE TABLE document_embeddings (
+  document_id         TEXT PRIMARY KEY,      -- Associated document UUID
+  summary             TEXT NOT NULL,         -- First 4000 characters of document body
+  embedding           TEXT NOT NULL          -- JSON-serialized float array (768 dimensions)
+);
 ```
 
 ---
 
-## 2. Flat File: `archive.jsonl` (IRRELEVANT cases)
+## 2. Flat File Formats (Backup Logs)
 
-**File:** `data/archive.jsonl`  
-**Format:** One JSON object per line, newline-delimited  
-**Written by:** `agents/archive.py` (append-only)  
-**Never overwritten — only appended**
+CeaseGuard maintains append-only JSONL files at local paths defined in `config.yaml` to ensure backwards compatibility with file-based unit tests.
 
+### Ingest Audit File (`data/audit.jsonl`)
+Appends one JSON object line per stage transition:
 ```json
 {
+  "entry_id": "550e8400-e29b-41d4-a716-446655440001",
   "document_id": "550e8400-e29b-41d4-a716-446655440000",
-  "filename": "customer_doc_2025_001.pdf",
-  "date_received": "2025-01-15T10:30:00Z",
-  "archived_at": "2025-01-15T10:30:05Z",
-  "classification": "IRRELEVANT",
-  "confidence": 0.91,
-  "citation": "Invoice #4521 attached for your records",
-  "reasoning": "Document is a billing invoice, no communication opt-out language present",
+  "filename": "customer_opt_out.pdf",
+  "timestamp": "2026-06-15T12:00:00Z",
+  "stage": "ROUTED",
+  "classification": "UNCERTAIN",
+  "confidence": 0.62,
+  "citation": "Please stop sending notifications",
   "language": "en",
-  "processing_time_ms": 987
-}
-```
-
----
-
-## 3. Audit Log: `audit.jsonl` (ALL cases)
-
-**File:** `data/audit.jsonl`  
-**Format:** One JSON object per line, newline-delimited  
-**Written by:** `agents/audit.py` (append-only)  
-**Multiple entries per document** (one per processing stage)  
-**NEVER modify or delete entries — this is the compliance record**
-
-```json
-{
-  "entry_id": "uuid-v4-unique-per-log-entry",
-  "document_id": "550e8400-e29b-41d4-a716-446655440000",
-  "filename": "customer_doc_2025_001.pdf",
-  "timestamp": "2025-01-15T10:30:00.123Z",
-  "stage": "RECEIVED | CLASSIFIED | ROUTED | HUMAN_DECISION | COMPLETED | ERROR",
-  "classification": "CEASE | UNCERTAIN | IRRELEVANT | PENDING | ERROR",
-  "confidence": 0.92,
-  "citation": "I hereby request you cease all direct communications",
-  "language": "en",
-  "edge_case_flag": false,
-  "agent_trace": ["ingestion_agent"],
+  "edge_case_flag": true,
+  "agent_trace": ["INGEST", "CLASSIFY", "JUDGE"],
   "human_override": null,
-  "routing_destination": "datastore | archive | escalation | deferred | null",
+  "routing_destination": "needs_review",
   "error": null,
-  "processing_time_ms": 1243,
-  "metadata": {}
-}
-```
-
-**Stage sequence for successful processing:**
-```
-RECEIVED → CLASSIFIED → ROUTED → COMPLETED
-```
-
-**Stage sequence with human review:**
-```
-RECEIVED → CLASSIFIED → ROUTED (to escalation) → HUMAN_DECISION → ROUTED (to datastore/archive) → COMPLETED
-```
-
-**Stage sequence on failure:**
-```
-RECEIVED → ERROR
-or
-RECEIVED → CLASSIFIED → ERROR
-```
-
----
-
-## 4. Deferred Queue: `deferred.jsonl`
-
-**File:** `data/deferred.jsonl`  
-**Written by:** `agents/escalation.py` when human chooses DEFER  
-**Read by:** `main.py --process-deferred`  
-**Format:** One JSON per line
-
-```json
-{
-  "document_id": "uuid",
-  "filename": "doc.pdf",
-  "pdf_path": "/path/to/original.pdf",
-  "deferred_at": "2025-01-15T10:30:00Z",
-  "retry_after": "2025-01-16T10:30:00Z",
-  "retry_count": 0,
-  "max_retries": 3,
-  "deferred_reason": "human requested more info",
-  "original_classification": {
-    "label": "UNCERTAIN",
-    "confidence": 0.61
+  "processing_time_ms": 1400,
+  "metadata": {
+    "route_status": "needs_review",
+    "review_state": "pending_human",
+    "text": "Extracted PDF contents...",
+    "pdf_path": "data/uploads/customer_opt_out.pdf"
   }
 }
 ```
 
 ---
 
-## 5. IngestionResult (In-Memory, not persisted)
+## 3. In-Memory Workflow State
 
-This is the in-memory dict that flows between agents. Not stored to disk.
+The central state dictionary flowing through the stateful agent workflow (`agents/workflow.py`):
 
 ```python
-IngestionResult = {
-  "document_id": str,          # UUID v4
-  "filename": str,
-  "pdf_path": str,
-  "text": str,                 # Full extracted text
-  "text_length": int,
-  "extraction_status": "success" | "partial" | "failed",
-  "language": {
-    "language": str,           # ISO 639-1
-    "confidence": float
-  },
-  "classification": {
-    "label": str,              # CEASE | UNCERTAIN | IRRELEVANT
-    "confidence": float,
-    "citation": str,
-    "reasoning": str,
-    "edge_case_flag": bool,
-    "model": str,              # Which model was used
-    "prompt_version": str      # v1.0.0
-  },
-  "judge_review": None | {
-    "judge_agrees": bool,
-    "judge_confidence": float,
-    "correction": None | dict
-  },
-  "routing": {
-    "destination": str,        # datastore | archive | escalation
-    "status": str,             # pending | complete | error
-    "record_id": str | None
-  },
-  "human_decision": None | {
-    "decision": str,
-    "decided_at": str,
-    "operator_id": str
-  },
-  "processing_start": str,     # ISO 8601
-  "processing_end": str | None,
-  "processing_time_ms": int | None,
-  "errors": []                 # List of non-fatal errors
+state = {
+    "document_id": str,                  # UUID v4
+    "filename": str,                     # PDF name
+    "pdf_path": str,                     # Absolute filepath
+    "text": str,                         # Extracted text content
+    "language": {
+        "language": str,                 # ISO language code
+        "confidence": float
+    },
+    "extraction_status": str,            # "success" | "failed"
+    "classification": {
+        "label": str,                    # "CEASE" | "IRRELEVANT" | "UNCERTAIN"
+        "confidence": float,
+        "citation": str,
+        "reasoning": str,
+        "edge_case_flag": bool
+    },
+    "current_stage": str,                # "INGEST" | "CLASSIFY" | "JUDGE" | "ROUTE" | "ESCALATED" | "COMPLETED"
+    "trace": list[str],                  # Active trace logs (e.g. ["INGEST", "CLASSIFY"])
+    "human_decision": None | {           # Present if operator overrides
+        "decision": str,                 # "CEASE" | "IRRELEVANT" | "DEFER"
+        "decided_at": str,
+        "operator_id": str,
+        "note": str
+    },
+    "route_result": dict,                # Outcome from datastore/archive agents
+    "processing_time_ms": int
 }
 ```
-
----
-
-## 6. Config Schema: `config.yaml`
-
-```yaml
-# config.yaml — All tunable parameters. Edit here, not in code.
-
-classifier:
-  model: "claude-sonnet-4-20250514"
-  prompt_version: "v1.0.0"
-  confidence_threshold_uncertain: 0.75    # Below this → force UNCERTAIN
-  confidence_threshold_edge_case: 0.60    # Below this → force UNCERTAIN + flag
-  max_text_chars: 50000                   # Chunk if longer
-  chunk_size_chars: 10000
-  chunk_overlap_chars: 500
-
-judge:
-  enabled: true
-  sample_rate: 0.10
-  always_on_uncertain: true
-  always_on_edge_cases: true
-
-datastore:
-  type: "sqlite"                          # "sqlite" | "postgres"
-  sqlite_path: "data/cease_records.db"
-  postgres_url: null                      # Set for production
-  retry_attempts: 3
-  retry_backoff_base_seconds: 1
-
-files:
-  audit_path: "data/audit.jsonl"
-  archive_path: "data/archive.jsonl"
-  deferred_path: "data/deferred.jsonl"
-
-escalation:
-  mode: "cli"                             # "cli" | "webhook" (future)
-  defer_retry_hours: 24
-  max_defer_retries: 3
-
-logging:
-  level: "INFO"                           # DEBUG | INFO | WARNING | ERROR
-  format: "json"                          # "json" | "text"
-```
-
----
-
-## Schema Change Protocol
-
-1. Update this file first
-2. Write a migration script if DB schema changes (even for SQLite)
-3. Add a CHANGELOG entry
-4. Update any agent that reads/writes the changed schema
-5. Run full test suite
-
-**Never** change a schema in code without updating this file.

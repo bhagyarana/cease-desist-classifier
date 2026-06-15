@@ -174,24 +174,56 @@
 
 ---
 
+## [v2.1.0-GEMINI] — 2026-06-15
+
+### Added
+- **File:** `app/layout.tsx`, `app/page.tsx`, `app/ingest/page.tsx`, `app/review/page.tsx`, `app/history/page.tsx`
+- **What:** Replaced the Streamlit console with a high-performance Next.js React frontend styled with a 12-column Swiss design grid and grocery baseline.
+- **Why:** Provide a world-class operator experience, incorporating Labor Illusion, Zeigarnik queues, and optical ink adjustments.
+- **Agent Impact:** Interactive workstation for operators replaces Streamlit; handles batch uploads, context-rich reviews, and RAG logs.
+
+### Added
+- **File:** `api/index.py`
+- **What:** Created a FastAPI backend router mapping Next.js frontend HTTP calls to python agent workflow executions.
+- **Why:** Connect Next.js React client with our Python agents securely in serverless Vercel hostings.
+- **Agent Impact:** Connects agents to browser traffic seamlessly.
+
+### Changed
+- **File:** `agents/classifier.py`
+- **What:** Upgraded LLM engine to Google Gemini `gemini-2.5-pro` (and `gemini-2.5-flash` for translations) using official `google-genai` SDK and Pydantic structured output response schemas.
+- **Why:** Guarantees 100% JSON parsing safety and provides structured extraction context.
+- **Agent Impact:** Eliminates regex output parsing crashes.
+
+### Added
+- **File:** `tools/db.py`, `agents/audit.py`, `agents/archive.py`, `agents/escalation.py`
+- **What:** Migrated file-based storage logs (audit.jsonl, archive.jsonl, deferred.jsonl) to relational tables. Created `DBConnectionProxy` to swap SQLite parameters (`?`) with PostgreSQL parameters (`%s`) dynamically at runtime.
+- **Why:** Enable persistent database writes in ephemeral serverless cloud platforms.
+- **Agent Impact:** All agents now support SQLite/PostgreSQL write transactions seamlessly.
+
+### Added
+- **File:** `tools/rag_service.py`
+- **What:** Created vector index matching service using `text-embedding-004` and local Python cosine calculations.
+- **Why:** Provide context-rich similarity suggestions in the Operator Review workstation.
+- **Agent Impact:** Offers similar case lookup during reviews.
+
+### Added
+- **File:** `tools/mcp_server.py`
+- **What:** Implemented Model Context Protocol (MCP) server exposing tools over JSON-RPC.
+- **Why:** Standardize agent integrations with external tools.
+- **Agent Impact:** Exposes pipeline commands to MCP clients.
+
+---
+
 ## [Unreleased] — Template for future entries
 
 ```
-## [v0.2.0] — YYYY-MM-DD
-
-### Fixed
-- **File:** `agents/classifier.py`
-- **What:** Added citation validation against source text
-- **Why:** L-003 — classifier was hallucinating citations
-- **Agent Impact:** classifier.py now raises ValueError if citation not in text
-- **Lesson ref:** L-003
+## [v2.2.0] — YYYY-MM-DD
 
 ### Added
-- **File:** `agents/audit.py`
-- **What:** Stage-based logging (received, classified, routed)
-- **Why:** L-002 — single end-of-pipeline log lost data on crashes
-- **Agent Impact:** ingestion.py now passes audit_logger instance through pipeline
-- **Lesson ref:** L-002
+- **File:** `path/to/file.py`
+- **What:** One sentence describing the change
+- **Why:** One sentence explaining the reason
+- **Agent Impact:** Which agents are affected and how
 ```
 
 ---

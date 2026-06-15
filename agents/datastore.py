@@ -1,9 +1,8 @@
 import json
-import sqlite3
 import time
 from datetime import datetime
 
-from tools.db import get_connection
+from tools.db import get_connection, DatabaseIntegrityError
 
 
 class DatastoreAgent:
@@ -57,7 +56,7 @@ class DatastoreAgent:
                     "record_id": document_id,
                     "processing_time_ms": int((time.time() - start_ts) * 1000),
                 }
-            except sqlite3.IntegrityError:
+            except DatabaseIntegrityError:
                 return {
                     "status": "duplicate",
                     "record_id": document_id,

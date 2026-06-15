@@ -1,6 +1,50 @@
 # architecture.md — CeaseGuard Deep Architecture
 > This file covers HOW the system works. README.md covers WHAT it does.
-> Agents: Read this before implementing any orchestration or inter-agent communication.
+
+---
+
+## Technical Stack Overview
+
+CeaseGuard has transitioned from a local command-line prototype to a production-grade web application deployed on Vercel:
+
+```
+┌────────────────────────────────────────────────────────┐
+│                   NEXT.JS FRONTEND                     │
+│         (React / Swiss Müller-Brockmann CSS)           │
+└──────────────────────────┬─────────────────────────────┘
+                           │ HTTP JSON Requests
+┌──────────────────────────▼─────────────────────────────┐
+│                 FASTAPI BACKEND ROUTER                 │
+│                 (api/index.py on Uvicorn)              │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+┌──────────────────────────▼─────────────────────────────┐
+│               STATEFUL AGENT WORKFLOW                  │
+│             (agents/workflow.py Run State)             │
+└──────┬───────────────────┬───────────────────┬─────────┘
+       │                   │                   │
+┌──────▼──────┐     ┌──────▼──────┐     ┌──────▼──────┐
+│  INGESTION  │     │ CLASSIFIER  │     │    JUDGE    │
+│    AGENT    │     │    AGENT    │     │    AGENT    │
+└──────┬──────┘     └──────┬──────┘     └──────┬──────┘
+       │                   │                   │
+       └─────────┬─────────┴───────────────────┘
+                 │
+      ┌──────────▼──────────┐
+      │  ROUTING DECISIONS  │
+      └──────┬───────────┬──┘
+             │           │
+   ┌─────────▼──┐     ┌──▼─────────┐
+   │  DATASTORE │     │   ARCHIVE  │
+   │  (CEASE)   │     │(IRRELEVANT)│
+   └────────────┘     └────────────┘
+```
+
+* **Frontend Layer**: Built with **Next.js (App Router)** and styled using Vanilla CSS following the 12-column Swiss grid system (Müller-Brockmann).
+* **Backend Layer**: A Python **FastAPI** application running on Uvicorn, structured to compile directly into serverless lambda functions on Vercel.
+* **LLM Engine**: Upgraded to **Google Gemini** using the official `google-genai` SDK. We utilize `gemini-2.5-pro` for core classification/reasoning and `gemini-2.5-flash` for translations.
+* **Vector Store & RAG**: Real-time context searches powered by Gemini `text-embedding-004` and local Cosine Similarity calculations for cross-database portability.
+* **Model Context Protocol (MCP)**: Exposes tool RPC interfaces for external compliance agents.
 
 ---
 
@@ -13,126 +57,80 @@ Every agent is a Python class with a strict interface. Agents communicate via pl
 class AgentName:
     def __init__(self, config: dict): ...
     def run(self, input: dict) -> dict: ...
-    # run() NEVER raises exceptions — always returns {"status": "error", ...} on failure
+    # run() NEVER raises exceptions — always returns error payloads on failure
 ```
-
----
 
 ### Agent 1: Ingestion Agent
 ```
 Role:     Pipeline entry point
-Input:    {"pdf_path": str}
-Output:   IngestionResult dict (see features.md F-05)
-Calls:    PDFReader.extract(), LanguageDetector.detect(), ClassifierAgent.run()
-Fails:    Returns status="failed" if PDF unreadable. status="partial" if extraction degraded.
-Logs:     Calls audit_logger at start and after classification
+Input:    {"pdf_path": str, "filename": str}
+Output:   {"text": str, "language": dict, "extraction_status": str}
+Calls:    PyMuPDF (fitz) text extractor, langdetect
+Fails:    Returns extraction_status="failed" if PDF unreadable.
 ```
 
 ### Agent 2: Classifier Agent
 ```
-Role:     Core LLM classification
-Input:    {"text": str, "language": str, "filename": str}
+Role:     Core LLM classification using Gemini Structured Outputs
+Input:    {"text": str, "language": dict, "filename": str}
 Output:   {"label": str, "confidence": float, "citation": str, "reasoning": str, "edge_case_flag": bool}
-Calls:    Anthropic API (claude-sonnet-4-20250514)
-Fails:    Returns label="UNCERTAIN", confidence=0.0, error="API failure"
-Validates: citation must be substring of input text (post-call check)
-Logs:     Nothing directly — Ingestion agent handles audit
+Calls:    Google GenAI SDK (gemini-2.5-pro with Pydantic response_schema)
+Fails:    Returns label="UNCERTAIN", confidence=0.0, reasoning="Model fallback"
+Validates: Enforces strict JSON structure and verbatim citation check
 ```
 
 ### Agent 3: Datastore Agent
 ```
 Role:     Write CEASE records to database
-Input:    IngestionResult where label="CEASE"
+Input:    Ingestion payload where label="CEASE"
 Output:   {"status": "written" | "duplicate" | "error", "record_id": str}
-Calls:    SQLite (dev) / PostgreSQL (prod)
+Calls:    tools/db.py connection pool (PostgreSQL or SQLite)
 Fails:    Returns status="error", retries 3x with backoff
-Idempotent: Duplicate document_id → status="duplicate", not an error
 ```
 
 ### Agent 4: Archive Agent
 ```
-Role:     Write IRRELEVANT records to flat file
-Input:    IngestionResult where label="IRRELEVANT"
-Output:   {"status": "archived", "filepath": str}
-Calls:    File I/O (append to archive.jsonl)
-Fails:    Returns status="error", logs to audit
-Idempotent: Duplicate document_id → skip + log warning
+Role:     Write IRRELEVANT records to archive log
+Input:    Ingestion payload where label="IRRELEVANT"
+Output:   {"status": "archived" | "duplicate" | "error", "filepath": str}
+Calls:    Dual writes: appends to JSONL archive and writes to archive_logs table
 ```
 
 ### Agent 5: Human Escalation Agent
 ```
-Role:     Present UNCERTAIN cases to human, collect decision
-Input:    IngestionResult where label="UNCERTAIN"
-Output:   {"human_decision": "CEASE"|"IRRELEVANT"|"DEFER", "decided_at": str}
-Mode:     CLI prompt (MVP). Web UI (future).
-DEFER:    Writes to data/deferred.jsonl for later reprocessing
+Role:     Stores deferred queue reviews
+Input:    Ingestion payload where label is escalated (UNCERTAIN or low confidence)
+Output:   {"decision": "CEASE"|"IRRELEVANT"|"DEFER", "decided_at": str}
+Calls:    Dual writes: logs to deferred.jsonl and deferred_requests table
 ```
 
 ### Agent 6: Audit Agent
 ```
-Role:     Write-only event log. Never reads. Never fails silently.
-Input:    AuditEntry dict (see data-schema.md)
-Output:   None (side effect: appends to audit.jsonl)
-Called by: Every other agent at every stage boundary
-Fails:    Logs to stderr, continues pipeline (audit failure NEVER stops processing)
+Role:     Write-only pipeline event audit
+Input:    AuditEntry dict (received, routed, completed logs)
+Output:   None (side effect: appends to audit.jsonl and audit_logs database table)
 ```
 
-### Agent 7: Judge Agent (Optional)
+### Agent 7: Judge Agent
 ```
-Role:     Second-pass quality check on classifier output
+Role:     Adversarial quality verification audit on high-risk classifications
 Input:    {"classifier_output": dict, "original_text": str}
-Output:   {"judge_agrees": bool, "judge_confidence": float, "correction": dict|None}
-When:     Always on UNCERTAIN, 10% random on others, always on edge_case_flag=True
-Prompt:   Adversarial — assume classifier is wrong, find contradiction
+Output:   {"judge_agrees": bool, "correction": dict|None}
+Prompt:   Adversarial prompt instructing the LLM to inspect classifications for errors
 ```
 
 ---
 
-## Data Flow
+## Stateful Workflow Execution (`agents/workflow.py`)
 
-### Happy Path — CEASE Document
-```
-PDF File
-  ↓ pdf_reader.extract()
-Raw Text
-  ↓ language_detector.detect()
-{text, language}
-  ↓ audit_logger.log("RECEIVED")
-  ↓ classifier.run()
-{label="CEASE", confidence=0.91, citation="...", reasoning="..."}
-  ↓ audit_logger.log("CLASSIFIED")
-  ↓ [confidence >= 0.75, label=CEASE]
-  ↓ datastore_agent.run()
-{status="written", record_id="uuid-..."}
-  ↓ audit_logger.log("ROUTED_TO_DATASTORE")
-DONE
-```
-
-### Uncertain Path — Human in Loop
-```
-PDF File → [same ingestion steps] →
-{label="UNCERTAIN", confidence=0.61}
-  ↓ judge_agent.run()  [optional, but runs on UNCERTAIN]
-{judge_agrees=True, correction=None}  [judge confirms uncertain]
-  ↓ escalation_agent.run()
-[CLI prompt shown to human]
-Human enters: [1] CEASE
-  ↓ {human_decision="CEASE"}
-  ↓ datastore_agent.run()
-  ↓ audit_logger.log("HUMAN_DECISION: CEASE")
-DONE
-```
-
-### Failure Path — PDF Unreadable
-```
-PDF File → pdf_reader.extract() → "" (empty, status=failed)
-  ↓ audit_logger.log("EXTRACTION_FAILED")
-  ↓ [text length < 10 chars → abort classification]
-  ↓ escalation_agent.run() with context: "PDF unreadable"
-[Human sees: "Document could not be read. Manual review required."]
-Human enters decision → route accordingly
-  ↓ audit_logger.log("MANUAL_FALLBACK")
-```
+Rather than executing linear scripts, CeaseGuard implements a **Stateful Workflow** pattern:
+1. **INGEST**: Extracts PDF text, determines language. Logs a `RECEIVED` event in the audit log database.
+2. **CLASSIFY**: Executes Gemini structured output classification model.
+3. **JUDGE**: Runs adversarial validation if label is `UNCERTAIN`, has high risk (`edge_case_flag=True`), or based on random sample checks.
+4. **ROUTE**: 
+   * If the confidence score is below the threshold (`0.75`), or the label is `UNCERTAIN`, it saves the current state (including extracted text) in the audit log metadata, flags the stage as `ESCALATED`, and pauses execution.
+   * If a human decision override is provided, the stage resumes from the `ROUTE` stage and writes the record to the appropriate database tables (`cease_requests` or `archive_logs`).
+   * Logs a final `COMPLETED` entry in the audit database.
 
 ---
 
@@ -140,100 +138,38 @@ Human enters decision → route accordingly
 
 | Scenario | Handling |
 |----------|----------|
-| Blank/empty PDF | status=failed → human escalation |
-| Scanned image PDF (no text layer) | OCR fallback via pytesseract |
-| Confidence 0.60–0.74 | Force UNCERTAIN regardless of label |
-| Citation not in source text | Flag edge_case=True → judge agent |
-| API timeout/error | classifier returns UNCERTAIN + error reason |
-| Duplicate document_id | Datastore: return "duplicate". Archive: skip. Audit: always write. |
-| DEFER from human | Write to deferred.jsonl, retry on next `--process-deferred` run |
-| Very long document (>50 pages) | Chunk into 10-page sections, classify each, aggregate by majority |
-| Mixed language document | Detect dominant language, note secondary in audit |
-| Document mentions "cease" in non-C&D context ("cease operations", "cease trading") | Classifier prompt includes negative examples for this. Confidence should be low. |
+| Blank/empty PDF | stage = INGEST → classification label = UNCERTAIN → Escalates to Review Queue |
+| Scanned image PDF (no text layer) | OCR fallback via PyMuPDF layout parsing |
+| Confidence 0.60–0.74 | Force UNCERTAIN regardless of model classification label |
+| Citation not in source text | Post-processing validation check → flags edge_case = True → Judge override audit |
+| Database uniqueness constraint | Database Connection Proxy translates SQLite `?` to Postgres `%s` and handles `DatabaseIntegrityError` idempotently |
+| Serverless file ephemerality | Audit, archive, and defer log writes are written directly to database tables (PostgreSQL / SQLite) |
 
 ---
 
-## System Boundaries
+## Configuration (`config.yaml`)
 
-**IN SCOPE:**
-- Ingesting PDFs from a local folder (batch or single)
-- Classifying into 3 categories
-- Writing CEASE records to DB
-- Writing IRRELEVANT records to flat file
-- Human review CLI for UNCERTAIN
-- Full audit log
-
-**OUT OF SCOPE (Phase 2):**
-- Email ingestion (receive PDF from email)
-- Real-time API endpoint
-- Web-based human review UI
-- Integration with enterprise CRM/CMS
-- Multi-user human review queue
-- Authentication/authorization
-- PDF generation of reports
-
----
-
-## Configuration
-
-All config in `config.yaml` (not hardcoded):
+Configuration is managed in a single central file:
 ```yaml
 classifier:
-  model: "claude-sonnet-4-20250514"
+  model: "gemini-2.5-pro"
   confidence_threshold_uncertain: 0.75
   confidence_threshold_edge_case: 0.60
-  max_text_length: 50000     # chars before chunking
-  
+  max_text_chars: 50000
+
 judge:
   enabled: true
-  sample_rate: 0.10          # 10% of non-UNCERTAIN cases
+  sample_rate: 0.10
   always_on_uncertain: true
   always_on_edge_cases: true
 
 datastore:
-  type: "sqlite"             # switch to "postgres" for prod
-  path: "data/cease_records.db"
-  retry_attempts: 3
-  retry_backoff_seconds: 1
+  type: "sqlite"             # Set "postgres" for Vercel production
+  sqlite_path: "data/cease_records.db"
+  postgres_url: null         # Read from POSTGRES_URL environment variable
 
-audit:
-  path: "data/audit.jsonl"
-  
-archive:
-  path: "data/archive.jsonl"
-
-deferred:
-  path: "data/deferred.jsonl"
+files:
+  audit_path: "data/audit.jsonl"
+  archive_path: "data/archive.jsonl"
+  deferred_path: "data/deferred.jsonl"
 ```
-
----
-
-## Performance Targets (NFR — see nfr.md for full detail)
-
-| Metric | Target |
-|--------|--------|
-| Single document processing time | < 5 seconds (API latency included) |
-| Batch (100 docs) | < 10 minutes sequential |
-| Classifier accuracy (on labeled test set) | > 90% |
-| False negative rate on CEASE | < 2% (missing a real C&D is the worst outcome) |
-| Audit completeness | 100% — zero documents unlogged |
-
----
-
-## Why This Architecture
-
-**Q: Why not one big LLM call that does everything?**  
-A: Single-agent has no audit trail, can't route to different systems, and fails catastrophically on PDF extraction errors. Multi-agent gives us testability and human-in-loop.
-
-**Q: Why not LangChain or CrewAI?**  
-A: Framework abstractions hide what's happening. For a compliance system that needs to explain itself (audit, citation, confidence), full transparency matters. Direct SDK calls = full control = full explainability.
-
-**Q: Why SQLite for MVP?**  
-A: Zero infrastructure. One file. Perfect for demo. Schema is identical to PostgreSQL — migration is a config change.
-
-**Q: Why JSONL for audit/archive?**  
-A: Append-only, one-record-per-line, grep-able, pandas-loadable, no schema migrations. Perfect for audit logs.
-
----
-
-*Reference: Claude for Legal (ip-legal cease-desist skill) uses similar patterns: confidence scoring, citation extraction, approval routing. Our system adapts these patterns for mass-volume inbound processing rather than legal counsel one-off review.*

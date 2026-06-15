@@ -1,201 +1,75 @@
 # CeaseGuard — Cease & Desist Document Intelligence System
-> Capstone Project | Multi-Agent AI Orchestration | Internal Project
+
+CeaseGuard is a production-grade multi-agent document intelligence platform that automates the triage, risk classification, and routing of inbound **Cease & Desist** legal customer requests. 
+
+Built with a hybrid **Next.js + FastAPI** serverless stack, it parses incoming PDFs, runs a stateful agent swarm using **Google Gemini**, embeds case contents for real-time **RAG similarity** checks, and presents manual review overrides inside a clean console designed on **Swiss Typography** and **Müller-Brockmann grid** systems.
 
 ---
 
-## What This Is
+## System Overview
 
-An intelligent multi-agent system that automates the classification and routing of inbound **Cease & Desist** PDF documents. Human agents currently read every document manually to decide if it's a real C&D request or not. This system replaces that manual step with AI classification, automated routing, audit logging, and human escalation — while keeping humans in the loop for uncertain cases.
+### 1. Operations Dashboard
+The main command center features real-time metrics, system statuses, quick workstation links, and an live pipeline transaction log feed.
 
-**Three outcomes for every document:**
-- `CEASE` → Write to datastore, trigger compliance workflow
-- `IRRELEVANT` → Archive to flat file
-- `UNCERTAIN` → Route to human agent for review
+![CeaseGuard Dashboard](screenshots/1-dashboard.png)
 
----
+### 2. Stateful Ingestion & Labor Illusion Pipeline
+The ingestion console features a drag-and-drop file dropzone and a step-by-step checklist. It implements the **Labor Illusion** principle to demonstrate active agent checkpoints (Ingestion, Language, Classifier, RAG Index, Route) during processing.
 
-## Problem Statement (verbatim from brief)
+| 1. PDF Ingestion | 2. Agent Swarm Checklist | 3. Pipeline Result |
+|:---:|:---:|:---:|
+| ![PDF Upload](screenshots/2-1-pdf-upload.png) | ![Processing Pipeline](screenshots/2-2-Processing-document.png) | ![Pipeline Result](screenshots/2-3-Classified-document.png) |
 
-> Cease & Desist is a formal request from customers to stop all kinds of direct communication to them from the enterprise. The enterprise receives scanned PDF documents of customer requests. In current process, human agents must manually read the documents and figure out if that request is a "Cease" or "No Cease" request and then process it accordingly.
+### 3. Human-in-the-Loop Workstation
+Escalated cases (uncertain labels or low-confidence metrics) are routed to a split-screen review queue showing full extracted text, document metadata, **RAG vector similarity recommendations**, and manual overrides.
 
-**Key requirements from brief:**
-- Classify into 3 categories: `Cease`, `Uncertain – Manual Review`, `Irrelevant`
-- Cease → write to datastore (date received, document name, etc.)
-- Irrelevant → write to flat file (archive agent)
-- Uncertain → present to human agent
-- ALL cases → audit log with explanation
-- Optional: multi-language support, dedicated review/judge agent
+![Review Workstation](screenshots/3-review-workspace.png)
 
-**Expected coverage:**
-- Multiple agents
-- Human in the loop
-- Database interaction by agents
-- Auditing
+### 4. Searchable History & Audit Trail
+All completed transactions are logged immutably in database records and displayed in a searchable table filtered by keyword or classification status.
 
-**Additional rationale required:**
-- Citation behind how documents are categorized
-- Confidence score behind categorization
-- Edge case coverage
-- Why this solution over others
-- Solution scalability
-- NFR implementation
+![Audit Trail Logs](screenshots/4-pipeline-history-log.png)
 
 ---
 
-## Architecture Overview
+## Technical Stack & Features
 
-```
-                    ┌─────────────────────────────┐
-                    │      INGESTION AGENT         │
-                    │  Reads PDF → extracts text   │
-                    │  Detects language            │
-                    └────────────┬────────────────┘
-                                 │
-                    ┌────────────▼────────────────┐
-                    │    CLASSIFIER AGENT          │
-                    │  CEASE / UNCERTAIN / IRREL.  │
-                    │  Returns: label + confidence │
-                    │  + citation excerpt          │
-                    └────────────┬────────────────┘
-                    ┌────────────┼─────────────────┐
-                    │            │                  │
-          ┌─────────▼──┐  ┌─────▼──────┐  ┌───────▼──────┐
-          │  DATASTORE  │  │  HUMAN     │  │  ARCHIVE     │
-          │  AGENT      │  │  ESCALATION│  │  AGENT       │
-          │  (CEASE)    │  │  (UNCERTAIN│  │  (IRRELEVANT)│
-          └─────────────┘  └─────┬──────┘  └──────────────┘
-                                 │ Human decides
-                    ┌────────────▼────────────────┐
-                    │       AUDIT AGENT            │
-                    │  Logs EVERY case with reason │
-                    │  Confidence, agent trace     │
-                    └─────────────────────────────┘
-```
+* **LLM Orchestration**: Powered by **Google Gemini API** (`gemini-2.5-pro` for classification; `gemini-2.5-flash` for translations) using official `google-genai` Pydantic response schemas.
+* **Stateful Agent Workflow**: Structured pipeline (`agents/workflow.py`) with transition interrupts.
+* **Local vector RAG**: Indexing summaries using Gemini `text-embedding-004` and local Python cosine calculations.
+* **Database Connection Proxy**: Connection manager supporting SQLite and PostgreSQL with runtime parameter translation.
+* **Grotesque Swiss UI**: Müller-Brockmann grid design tokens, Inter webfonts, and a client-side layout grid guides overlay (Press the **`G`** key to toggle grid visibility).
 
 ---
 
-## Repository Structure
+## Quick Start (Run Locally)
 
-```
-cease-desist-agent/
-│
-├── README.md               ← You are here
-├── features.md             ← Feature list + build order
-├── lessons.md              ← Mistakes & learnings log
-├── CHANGELOG.md            ← Every change documented
-│
-├── docs/
-│   ├── architecture.md     ← Deep architecture + agent contracts
-│   ├── agent-prompts.md    ← All system prompts (versioned)
-│   ├── data-schema.md      ← DB schema + flat file format
-│   ├── nfr.md              ← Non-functional requirements
-│   └── rationale.md        ← Why this approach vs others
-│
-├── agents/
-│   ├── ingestion.py        ← PDF → text extraction
-│   ├── classifier.py       ← Core classification logic
-│   ├── datastore.py        ← DB write agent (CEASE cases)
-│   ├── archive.py          ← Flat file agent (IRRELEVANT)
-│   ├── escalation.py       ← Human-in-loop handler
-│   ├── audit.py            ← Audit logger (ALL cases)
-│   └── judge.py            ← Optional: review agent
-│
-├── tools/
-│   ├── pdf_reader.py       ← PDF text extraction util
-│   ├── language_detect.py  ← Language detection
-│   └── db.py               ← SQLite/Postgres abstraction
-│
-├── tests/
-│   ├── test_classifier.py
-│   ├── test_ingestion.py
-│   ├── test_audit.py
-│   └── sample_docs/        ← Test PDFs (synthetic)
-│
-├── data/
-│   ├── cease_records.db    ← SQLite datastore
-│   ├── archive.jsonl       ← Flat file for irrelevant docs
-│   └── audit.jsonl         ← Full audit log
-│
-└── main.py                 ← Entry point: process a PDF
-```
-
----
-
-## Quick Start
-
+### 1. Configure Credentials
+Create a `.env` file in the root directory:
 ```bash
-# 1. Install dependencies
+GEMINI_API_KEY=your_google_gemini_api_key
+# Optional: DATABASE_URL=your_postgres_connection_string (Defaults to local SQLite)
+```
+
+### 2. Install Dependencies
+```bash
+# Install Python packages
 pip install -r requirements.txt
 
-# 2. Set your API key
-echo "ANTHROPIC_API_KEY=your_key" > .env
-
-# 3. Launch the browser UI
-streamlit run app.py
-
-# 4. Or process a single document from the CLI
-python main.py --pdf path/to/document.pdf
-
-# 5. Watch the audit log
-tail -f data/audit.jsonl
+# Install JavaScript packages
+npm install
 ```
 
-The browser UI is the easiest way to review documents: upload a PDF, see the classification summary, and make the human decision inline for UNCERTAIN cases.
+### 3. Start Dev Servers
 
----
+Start the **FastAPI Backend** (Port 8000):
+```bash
+python -m uvicorn api.index:app --port 8000 --reload
+```
 
-## Tech Stack
+Start the **Next.js Frontend** (Port 3000):
+```bash
+npm run dev
+```
 
-| Layer | Choice | Why |
-|-------|--------|-----|
-| LLM | Claude claude-sonnet-4-20250514 | Best classification + citation quality |
-| PDF Parsing | PyMuPDF (fitz) | Fast, handles scanned docs |
-| Language Detection | langdetect | Lightweight, offline |
-| Datastore | SQLite → PostgreSQL path | Simple start, scales |
-| Audit Log | JSONL flat file | Append-only, grep-able |
-| Orchestration | Python + Anthropic SDK | Direct control, no framework lock-in |
-| Human UI | Streamlit review console + CLI fallback | Simple, user-friendly operator flow |
-
----
-
-## Key Design Decisions
-
-1. **No LangChain/LlamaIndex** — Direct SDK calls. Full transparency, no magic.
-2. **Each agent = one Python class** — Easy to test, swap, or mock individually.
-3. **Confidence threshold = 0.75** — Below this → UNCERTAIN regardless of label.
-4. **Audit log is sacred** — Every document gets logged even on agent failure.
-5. **Human always wins** — If human overrides classifier, that label sticks and feeds lessons.md.
-
----
-
-## Reference: Claude for Legal — IP Legal Cease-Desist Skill
-
-Anthropic's `ip-legal` plugin includes a `cease-desist` skill that handles **outbound** C&D letter drafting and **inbound** C&D triage. Key patterns borrowed:
-
-- **Enforcement posture config** → maps to our confidence threshold tuning
-- **Approval routing** → maps to our human escalation agent
-- **Citation in every output** → maps to our `citation` field in classifier output
-- **Practice profile (CLAUDE.md)** → maps to our `config.yaml` with enterprise-specific context
-- **Matter workspace isolation** → maps to our per-document audit trail
-
-Our use case differs: we handle **mass inbound volume** (not legal counsel reviewing one-offs), so we optimize for throughput + audit completeness over legal drafting quality.
-
----
-
-## Documents in this Repo
-
-| File | Purpose |
-|------|---------|
-| `README.md` | Project overview, architecture, quickstart |
-| `features.md` | Feature list, build order, acceptance criteria |
-| `lessons.md` | Mistakes made, patterns learned, do-nots |
-| `CHANGELOG.md` | Every change with date, reason, agent impact |
-| `docs/architecture.md` | Agent contracts, data flow, edge cases |
-| `docs/agent-prompts.md` | All system prompts (versioned) |
-| `docs/data-schema.md` | All data structures |
-| `docs/nfr.md` | Non-functional requirements |
-| `docs/rationale.md` | Why this solution |
-
----
-
-*Built for capstone project | Do not share code/data/artifacts to restricted networks.*
+Open **[http://localhost:3000](http://localhost:3000)** in your browser.

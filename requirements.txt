@@ -1,7 +1,10 @@
-anthropic
+google-genai
 PyMuPDF
 langdetect
 python-dotenv
 PyYAML
 pytest
 streamlit
+fastapi
+uvicorn
+psycopg2-binary

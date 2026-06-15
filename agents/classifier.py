@@ -2,6 +2,7 @@ import logging
 import os
 import re
 from typing import Dict, Optional
+from pydantic import BaseModel, Field
 
 from agents.prompts import ACTIVE_CLASSIFIER_PROMPT, ACTIVE_TRANSLATION_PROMPT
 
@@ -59,11 +60,22 @@ FRENCH_TRANSLATION_MAP = [
 ]
 
 
+class ClassificationResult(BaseModel):
+    label: str = Field(description="The classification label. Must be exactly 'CEASE', 'UNCERTAIN', or 'IRRELEVANT'.")
+    confidence: float = Field(description="Honest confidence score between 0.0 and 1.0.")
+    citation: str = Field(description="Exact verbatim excerpt from the document that most influenced the decision, max 200 chars. Must be empty if label is IRRELEVANT and no citation is present.")
+    reasoning: str = Field(description="One sentence explanation of the classification decision.")
+    edge_case_flag: bool = Field(description="True if unusual, mixed, or ambiguous patterns are detected, false otherwise.")
+
+
 class ClassifierAgent:
     def __init__(self, config: dict):
         self.config = config
-        self._api_key = os.environ.get("ANTHROPIC_API_KEY")
-        self._model = config.get("classifier", {}).get("model", "claude-sonnet-4-20250514")
+        self._api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
+        model_name = config.get("classifier", {}).get("model", "gemini-2.5-pro")
+        if "claude" in model_name:
+            model_name = "gemini-2.5-pro"
+        self._model = model_name
         self._confidence_threshold_uncertain = config.get("classifier", {}).get("confidence_threshold_uncertain", 0.75)
         self._confidence_threshold_edge_case = config.get("classifier", {}).get("confidence_threshold_edge_case", 0.60)
 
@@ -83,35 +95,44 @@ class ClassifierAgent:
                 "error": "empty_text",
             }
 
-        if self._api_key and self._can_call_anthropic():
+        if self._api_key and self._can_call_gemini():
             try:
-                return self._call_anthropic(text, language, filename)
+                return self._call_gemini(text, language, filename)
             except Exception as exc:
-                logger.warning("Anthropic classification failed: %s", exc)
+                logger.warning("Gemini classification failed: %s", exc)
 
         return self._heuristic_classify(text, language)
 
-    def _can_call_anthropic(self) -> bool:
+    def _can_call_gemini(self) -> bool:
         try:
-            import anthropic  # type: ignore
+            from google import genai
             return True
         except ImportError:
             return False
 
-    def _call_anthropic(self, text: str, language: str, filename: str) -> Dict[str, object]:
-        from anthropic import Anthropic
+    def _call_gemini(self, text: str, language: str, filename: str) -> Dict[str, object]:
+        from google import genai
+        from google.genai import types
+        import json
 
-        client = Anthropic(api_key=self._api_key)
-        prompt = f"{ACTIVE_CLASSIFIER_PROMPT}\n\nDocument text:\n{text[:20000]}"
-        response = client.completions.create(
+        client = genai.Client(api_key=self._api_key)
+        prompt = f"Document text:\n{text[:20000]}"
+        response = client.models.generate_content(
             model=self._model,
-            prompt=prompt,
-            max_tokens_to_sample=512,
-            temperature=0.0,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=ACTIVE_CLASSIFIER_PROMPT,
+                response_mime_type="application/json",
+                response_schema=ClassificationResult,
+                temperature=0.0,
+            )
         )
-        raw_output = response.get("completion", "")
-        parsed = self._parse_json(raw_output)
-        if parsed and self._validate_citation(parsed.get("citation", ""), text):
+        raw_output = response.text
+        if not raw_output:
+            raise ValueError("Empty response from Gemini API")
+            
+        parsed = json.loads(raw_output)
+        if parsed and self._validate_citation(parsed.get("citation", ""), text, parsed.get("label", "UNCERTAIN")):
             return self._finalize_output(self._apply_thresholds(parsed), text, language)
         return self._heuristic_classify(text, language)
 
@@ -126,8 +147,10 @@ class ClassifierAgent:
         except Exception:
             return None
 
-    def _validate_citation(self, citation: str, text: str) -> bool:
-        return bool(citation and citation in text)
+    def _validate_citation(self, citation: str, text: str, label: str) -> bool:
+        if not citation:
+            return label != "CEASE"
+        return citation in text
 
     def _apply_thresholds(self, parsed: dict) -> dict:
         label = parsed.get("label", "UNCERTAIN")
@@ -225,26 +248,28 @@ class ClassifierAgent:
         if not citation:
             return citation
 
-        if self._api_key and self._can_call_anthropic():
+        if self._api_key and self._can_call_gemini():
             try:
                 return self._call_translation_model(citation, language)
             except Exception as exc:
-                logger.warning("Translation via Anthropic failed: %s", exc)
+                logger.warning("Translation via Gemini failed: %s", exc)
 
         return self._translate_text_for_language(citation, language)
 
     def _call_translation_model(self, citation: str, language: str) -> str:
-        from anthropic import Anthropic
+        from google import genai
+        from google.genai import types
 
-        client = Anthropic(api_key=self._api_key)
+        client = genai.Client(api_key=self._api_key)
         prompt = ACTIVE_TRANSLATION_PROMPT.format(source_language=language, citation_text=citation[:4000])
-        response = client.completions.create(
-            model=self._model,
-            prompt=prompt,
-            max_tokens_to_sample=128,
-            temperature=0.0,
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.0,
+            )
         )
-        translated = (response.get("completion", "") or "").strip()
+        translated = (response.text or "").strip()
         return translated or citation
 
     def _apply_phrase_map(self, text: str, phrase_map: list[tuple[str, str]]) -> str:

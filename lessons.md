@@ -110,6 +110,36 @@
 
 ---
 
+### L-009 · Next.js rewrites to local FastAPI fail when host is omitted or incorrect
+
+**When:** Phase 2 Scaffold  
+**What went wrong:** Frontend requests to `/api/metrics` failed with connection errors during local development.  
+**Root cause:** Next.js local config did not proxy the API endpoints because `next.config.js` was missing rewrites or pointing to the wrong port.  
+**Fix applied:** Added `rewrites()` in `next.config.js` routing `/api/:path*` to `http://127.0.0.1:8000/api/:path*`.  
+**Rule going forward:** Always match ports and hostnames exactly between frontend proxy configs and backend dev servers.
+
+---
+
+### L-010 · SQLite database path resolves differently when running in subdirectory api/
+
+**When:** Phase 3 API implementation  
+**What went wrong:** Running the API server locally caused it to create a second, separate SQLite database inside `api/data/cease_records.db` instead of using `data/cease_records.db`.  
+**Root cause:** Relative paths like `data/cease_records.db` resolve relative to the current working directory, which changes depending on how the server is started.  
+**Fix applied:** Resolved the absolute path to `config.yaml` and the SQLite database file dynamically using `os.path.abspath(__file__)` and `os.path.dirname`.  
+**Rule going forward:** Always convert relative storage paths to absolute paths relative to the project root at app startup.
+
+---
+
+### L-011 · Python relative package imports fail when uvicorn is run from nested directory
+
+**When:** Phase 3 Verification  
+**What went wrong:** Running the API script directly via Uvicorn crashed with `ModuleNotFoundError: No module named 'agents'`.  
+**Root cause:** The Python path does not automatically include parent directories when running a script nested inside a folder (like `api/index.py`).  
+**Fix applied:** Prefixed `sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))` at the top of `api/index.py`.  
+**Rule going forward:** Always append the workspace root directory to `sys.path` in scripts that are meant to run as entrypoints inside subdirectories.
+
+---
+
 ## Pending Lessons (Suspected but not yet confirmed)
 
 These are patterns we suspect will be problems. Fill in the blanks when they materialize.

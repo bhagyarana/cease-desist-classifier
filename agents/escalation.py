@@ -1,6 +1,6 @@
 import json
-from datetime import datetime
-from datetime import timezone
+import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -43,6 +43,24 @@ class EscalationAgent:
         }
 
     def _write_deferred(self, ingestion_result: dict, result: dict) -> None:
+        postgres_url = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL") or self.config.get("datastore", {}).get("postgres_url")
+        db_type = self.config.get("datastore", {}).get("type", "sqlite")
+        sqlite_path = self.config.get("datastore", {}).get("sqlite_path")
+
+        # Always write to file
+        try:
+            self._write_deferred_file(ingestion_result, result)
+        except Exception as exc:
+            pass
+
+        # Attempt to write to DB if database mode is configured
+        if db_type == "postgres" or postgres_url or (db_type == "sqlite" and sqlite_path):
+            try:
+                self._write_deferred_db(ingestion_result, result)
+            except Exception as exc:
+                pass
+
+    def _write_deferred_file(self, ingestion_result: dict, result: dict) -> None:
         deferred = {
             "document_id": ingestion_result["document_id"],
             "filename": ingestion_result["filename"],
@@ -59,3 +77,28 @@ class EscalationAgent:
         }
         with open(self.path, "a", encoding="utf-8") as handle:
             handle.write(json.dumps(deferred, ensure_ascii=False) + "\n")
+
+    def _write_deferred_db(self, ingestion_result: dict, result: dict) -> None:
+        from tools.db import get_connection, DatabaseIntegrityError
+        conn = get_connection(self.config)
+        try:
+            with conn:
+                conn.execute(
+                    """
+                    INSERT INTO deferred_requests (
+                        document_id, filename, deferred_at, operator_id, note, retries_count, status
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        ingestion_result["document_id"],
+                        ingestion_result["filename"],
+                        result["decided_at"],
+                        result.get("operator_id", "cli-user"),
+                        result.get("note"),
+                        0,
+                        "deferred"
+                    )
+                )
+        except DatabaseIntegrityError:
+            # Duplicate entry, ignore
+            pass

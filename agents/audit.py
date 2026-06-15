@@ -18,15 +18,60 @@ except ImportError:
 
 class AuditAgent:
     def __init__(self, config: dict):
+        self.config = config
         self.path = config.get("files", {}).get("audit_path", "data/audit.jsonl")
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
 
     def log(self, entry: dict) -> None:
         entry = self._normalize_entry(entry)
+        # Always write to file for backup and test validation
         try:
             self._write_line(entry)
         except Exception as exc:
-            print(f"[AUDIT] Failed to write audit log: {exc}", file=sys.stderr)
+            print(f"[AUDIT] Failed to write audit log to file: {exc}", file=sys.stderr)
+
+        # Attempt to write to database if configured
+        try:
+            postgres_url = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL") or self.config.get("datastore", {}).get("postgres_url")
+            db_type = self.config.get("datastore", {}).get("type", "sqlite")
+            sqlite_path = self.config.get("datastore", {}).get("sqlite_path")
+            if db_type == "postgres" or postgres_url or (db_type == "sqlite" and sqlite_path):
+                self._write_to_db(entry)
+        except Exception as exc:
+            # Fallback silently or print error if db is uninitialized
+            pass
+
+    def _write_to_db(self, entry: dict) -> None:
+        from tools.db import get_connection
+        conn = get_connection(self.config)
+        with conn:
+            conn.execute(
+                """
+                INSERT INTO audit_logs (
+                    entry_id, document_id, filename, timestamp, stage, classification,
+                    confidence, citation, language, edge_case_flag, agent_trace,
+                    human_override, routing_destination, error, processing_time_ms, metadata
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    entry.get("entry_id"),
+                    entry.get("document_id"),
+                    entry.get("filename"),
+                    entry.get("timestamp"),
+                    entry.get("stage"),
+                    entry.get("classification"),
+                    entry.get("confidence"),
+                    entry.get("citation"),
+                    entry.get("language"),
+                    int(entry.get("edge_case_flag", False)),
+                    json.dumps(entry.get("agent_trace", [])),
+                    entry.get("human_override"),
+                    entry.get("routing_destination"),
+                    entry.get("error"),
+                    entry.get("processing_time_ms", 0),
+                    json.dumps(entry.get("metadata", {})),
+                )
+            )
 
     def _normalize_entry(self, entry: dict) -> dict:
         normalized = dict(entry)

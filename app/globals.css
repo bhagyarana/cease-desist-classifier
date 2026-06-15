@@ -1,0 +1,494 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  /* Grid & Rhythm Tokens (Müller-Brockmann system) */
+  --cols: 12;
+  --gutter: 24px;
+  --margin: 40px;
+  --bl: 8px; /* Baseline unit */
+  --lh: 24px; /* Line height leading (3 * --bl) */
+  --maxw: 1280px;
+
+  /* Colors: Sleek Modernist Swiss palette + compliance teal */
+  --bg: #f4efe6;
+  --panel: #fffaf3;
+  --panel-strong: #ffffff;
+  --text: #111111;
+  --muted: #5b6472;
+  --border: #e7ded0;
+  --accent: #0f766e; /* Compliance teal */
+  --accent-light: rgba(15, 118, 110, 0.08);
+  --accent-red: #e4002b; /* Swiss red */
+  
+  --success: #166534;
+  --success-bg: rgba(22, 101, 52, 0.08);
+  --warning: #b45309;
+  --warning-bg: rgba(180, 83, 9, 0.1);
+  --danger: #b91c1c;
+  --danger-bg: rgba(185, 28, 28, 0.08);
+  
+  /* Layout Spacing */
+  --sidebar-w: 240px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg);
+  background-image: 
+    radial-gradient(circle at top left, rgba(15, 118, 110, 0.08), transparent 35%),
+    radial-gradient(circle at top right, rgba(228, 0, 43, 0.04), transparent 28%);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: var(--lh);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Grotesque Typography Scale (Snaps to 8px baseline) */
+h1 {
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: var(--lh);
+}
+
+h2 {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--lh);
+}
+
+h3 {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+
+p {
+  font-size: 14px;
+  line-height: var(--lh);
+  margin-bottom: var(--lh);
+  color: var(--text);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Mono Code/Data Elements */
+code, pre, .mono {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* Layout Grid Container */
+.page-container {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Sidebar Styling */
+.sidebar {
+  width: var(--sidebar-w);
+  border-right: 1px solid var(--border);
+  background-color: rgba(255, 250, 243, 0.7);
+  backdrop-filter: blur(12px);
+  padding: 32px 24px;
+  display: flex;
+  flex-column: column;
+  flex-direction: column;
+  position: fixed;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  z-index: 100;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+.logo-icon {
+  width: 24px;
+  height: 24px;
+  background-color: var(--accent);
+  border-radius: 4px;
+}
+
+.logo-text {
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.03em;
+  color: var(--accent);
+}
+
+.nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+}
+
+.nav-item a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  color: var(--muted);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.nav-item a:hover {
+  background-color: var(--accent-light);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.nav-item.active a {
+  background-color: var(--accent);
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.nav-badge {
+  margin-left: auto;
+  background-color: var(--warning);
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+}
+
+/* Main Content Wrap */
+.main-content {
+  flex: 1;
+  margin-left: var(--sidebar-w);
+  padding: 40px var(--margin);
+  position: relative;
+  max-width: calc(100% - var(--sidebar-w));
+}
+
+.wrap {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Müller-Brockmann Layout Bands (subgrid bands) */
+.band {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  column-gap: var(--gutter);
+  align-items: start;
+  margin-bottom: 32px;
+}
+
+/* Card/Panel Designs */
+.panel {
+  background-color: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(31, 41, 55, 0.03);
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.panel:hover {
+  box-shadow: 0 12px 48px rgba(31, 41, 55, 0.06);
+}
+
+.panel-title {
+  margin-bottom: 12px;
+  color: var(--text);
+}
+
+/* Metric Cards */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--gutter);
+  margin-bottom: 32px;
+}
+
+.metric-card {
+  background-color: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metric-label {
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+.metric-val {
+  font-size: 36px;
+  line-height: 40px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--text);
+}
+
+/* Interactive Grid Guides Overlay */
+.guides {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1000;
+  display: none;
+  opacity: 0.75;
+}
+
+.guides-cols {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  column-gap: var(--gutter);
+  height: 100%;
+}
+
+.guides-col {
+  background-color: rgba(15, 118, 110, 0.03);
+  border-left: 1px dashed rgba(15, 118, 110, 0.15);
+  border-right: 1px dashed rgba(15, 118, 110, 0.15);
+  height: 100%;
+  position: relative;
+}
+
+.guides-col::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Draw horizontal baseline grid lines every 8px */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent calc(var(--bl) - 1px),
+    rgba(15, 118, 110, 0.05) calc(var(--bl) - 1px),
+    rgba(15, 118, 110, 0.05) var(--bl)
+  );
+}
+
+/* Toggle Switch grid helper state */
+body.grid-on .guides {
+  display: block;
+}
+
+/* Grid Overlay Control Badge */
+.grid-toggle-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background-color: var(--text);
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 99px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.grid-toggle-btn:hover {
+  transform: translateY(-2px);
+  background-color: var(--accent);
+}
+
+/* Pills & Status Badges */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+}
+
+.pill-cease {
+  background-color: var(--danger-bg);
+  color: var(--danger);
+}
+
+.pill-irrelevant {
+  background-color: var(--success-bg);
+  color: var(--success);
+}
+
+.pill-uncertain {
+  background-color: var(--warning-bg);
+  color: var(--warning);
+}
+
+/* Forms & Ingest Dropzone */
+.dropzone {
+  border: 2px dashed var(--border);
+  background-color: rgba(255, 255, 255, 0.4);
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropzone:hover {
+  border-color: var(--accent);
+  background-color: rgba(15, 118, 110, 0.02);
+}
+
+/* Decision Panel Shortcuts */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.btn-primary {
+  background-color: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+.btn-primary:hover {
+  background-color: #0d655e;
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  color: #ffffff;
+  border-color: var(--danger);
+}
+
+.btn-danger:hover {
+  background-color: #a31818;
+}
+
+.btn-warning {
+  background-color: var(--warning);
+  color: #ffffff;
+  border-color: var(--warning);
+}
+
+.btn-warning:hover {
+  background-color: #9f4907;
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--text);
+}
+
+.btn-outline:hover {
+  background-color: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Text area */
+.text-input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background-color: var(--panel-strong);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: var(--lh);
+  color: var(--text);
+  outline: none;
+}
+
+.text-input:focus {
+  border-color: var(--accent);
+}
+
+/* Step checklist animation (Labor Illusion) */
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.checklist-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checklist-item.active .checklist-circle {
+  border-color: var(--accent);
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+}
+
+.checklist-item.done .checklist-circle {
+  background-color: var(--success);
+  border-color: var(--success);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

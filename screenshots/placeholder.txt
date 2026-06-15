@@ -1,0 +1,2 @@
+Place your high-resolution PNG/JPG screenshots of the CeaseGuard platform in this folder.
+You can then link to them in your README.md using the relative path: `/screenshots/filename.png` or `screenshots/filename.png`.
